@@ -3,13 +3,13 @@
 /*  assignment, and User Management all share one source of truth.     */
 /* ------------------------------------------------------------------ */
 
-export type Role = 'Reviewer' | 'Lead Reviewer' | 'Manager' | 'System Manager'
+export type Role = 'Reviewer' | 'Manager' | 'System Manager'
 export type UserStatus = 'Active' | 'Invited' | 'Disabled'
 
 /**
  * Configuration roles — the only roles that may access Forms management,
- * User management, and Sampling/Assignment. Reviewers, Lead Reviewers, and
- * Managers are intentionally excluded.
+ * User management, and Sampling/Assignment. Reviewers and Managers are
+ * intentionally excluded.
  */
 export const CONFIG_ROLES: Role[] = ['System Manager']
 
@@ -28,7 +28,7 @@ export interface User {
   reviews: number
 }
 
-export const ROLES: Role[] = ['Reviewer', 'Lead Reviewer', 'Manager', 'System Manager']
+export const ROLES: Role[] = ['Reviewer', 'Manager', 'System Manager']
 
 export const TEAMS = ['Property — West', 'Property — East', 'Auto — National', 'Casualty — GL', 'Complex & Litigation'] as const
 export type Team = (typeof TEAMS)[number]
@@ -46,7 +46,7 @@ export function seedUsers(): User[] {
     reviews,
   })
   return [
-    u('A. Reyes', 'a.reyes@qualstate.ai', 'Lead Reviewer', 'Property — West', 'Active', '2026-06-09', 142),
+    u('A. Reyes', 'a.reyes@qualstate.ai', 'Reviewer', 'Property — West', 'Active', '2026-06-09', 142),
     u('T. Coleman', 't.coleman@qualstate.ai', 'Reviewer', 'Property — East', 'Active', '2026-06-09', 118),
     u('M. Devi', 'm.devi@qualstate.ai', 'Reviewer', 'Auto — National', 'Active', '2026-06-08', 96),
     u('K. Park', 'k.park@qualstate.ai', 'Reviewer', 'Casualty — GL', 'Active', '2026-06-08', 87),
@@ -61,5 +61,5 @@ export function seedUsers(): User[] {
 
 /** reviewers eligible to be assigned claims */
 export function assignableReviewers(users: User[]): User[] {
-  return users.filter((u) => u.status === 'Active' && (u.role === 'Reviewer' || u.role === 'Lead Reviewer'))
+  return users.filter((u) => u.status === 'Active' && u.role === 'Reviewer')
 }

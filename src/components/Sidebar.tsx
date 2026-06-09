@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, BarChart3, RotateCcw, GraduationCap, SlidersHorizontal } from 'lucide-react'
+import { ClipboardCheck, ShieldCheck, Sparkles, Workflow, BarChart3, RotateCcw, GraduationCap, SlidersHorizontal } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 import { canConfigure } from '../data/users'
 
 const links = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, config: false },
   { to: '/queue', label: 'Reviews', icon: ClipboardCheck, config: false },
   { to: '/results', label: 'Results', icon: BarChart3, config: false },
   { to: '/coaching', label: 'Coaching & Disputes', icon: GraduationCap, config: false },

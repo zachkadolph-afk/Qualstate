@@ -162,7 +162,7 @@ export default function HowItWorks() {
           subtitle="AI reviews every claim first. Your experts calibrate it. Quality assurance becomes a continuously improving system."
           right={
             <Link
-              to="/dashboard"
+              to="/results"
               className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-glow transition-colors"
             >
               See it live <ArrowRight size={16} />

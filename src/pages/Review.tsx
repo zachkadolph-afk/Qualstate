@@ -85,7 +85,7 @@ function ReviewInner({ claim }: { claim: Claim }) {
       formId: form?.id,
       reviewType: form?.reviewType,
     })
-    navigate('/dashboard')
+    navigate('/queue')
   }
 
   return (

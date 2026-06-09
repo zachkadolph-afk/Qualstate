@@ -11,7 +11,6 @@ import { Role, UserStatus, ROLES, TEAMS, Team } from '../data/users'
 
 const ROLE_STYLE: Record<Role, string> = {
   Reviewer: 'bg-brand-50 text-brand-700 border-brand-200',
-  'Lead Reviewer': 'bg-violet-50 text-violet-700 border-violet-200',
   Manager: 'bg-amber-50 text-amber-700 border-amber-200',
   'System Manager': 'bg-slate-800 text-white border-slate-800',
 }
@@ -170,7 +169,7 @@ export default function UserManagement() {
 
         <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
           <ShieldCheck size={14} />
-          Roles map to permissions: Reviewers validate claims, Leads run R1/R2 calibration, Managers see scorecards, Admins manage users and questionnaires. Active reviewers form the assignable pool used by Sampling.
+          Roles map to permissions: Reviewers validate claims, Managers see results and coaching, System Managers manage users, forms, rules, and sampling. Active reviewers form the assignable pool used by Sampling.
         </div>
       </div>
     </div>

@@ -101,7 +101,6 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: 'Reviewer', email: 't.coleman@qualstate.ai' },
-                { label: 'Lead Reviewer', email: 'a.reyes@qualstate.ai' },
                 { label: 'Manager', email: 'p.okonkwo@qualstate.ai' },
                 { label: 'System Manager', email: 'd.whitfield@qualstate.ai' },
               ].map((p) => (
