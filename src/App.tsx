@@ -6,6 +6,7 @@ import Queue from './pages/Queue'
 import Review from './pages/Review'
 import HowItWorks from './pages/HowItWorks'
 import Scorecards from './pages/Scorecards'
+import Calibration from './pages/Calibration'
 import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
 import UserManagement from './pages/UserManagement'
 import Sampling from './pages/Sampling'
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/queue" element={<Queue />} />
           <Route path="/review/:id" element={<Review />} />
           <Route path="/scorecards" element={<Scorecards />} />
+          <Route path="/calibration" element={<Calibration />} />
           <Route path="/questionnaire" element={<QuestionnaireBuilder />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/sampling" element={<Sampling />} />

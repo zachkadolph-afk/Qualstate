@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { Filter, Shuffle, Layers, Target, Users2, Gauge } from 'lucide-react'
 import { Card, PageHeader } from '../components/ui'
 
@@ -147,6 +148,43 @@ export default function Sampling() {
                 <RailRow icon={Filter} label="Population coverage" value={`${preview.coverage}%`} />
                 <RailRow icon={Users2} label="Per reviewer / month" value={`${preview.perReviewer}`} />
                 <RailRow icon={Gauge} label="Capacity utilization" value={`${preview.utilization}%`} />
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Population coverage</div>
+              <ResponsiveContainer width="100%" height={150}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Reviewed', value: preview.selected, color: '#2f6df6' },
+                      { name: 'Not reviewed', value: Math.max(0, monthlyVolume - preview.selected), color: '#e8eef9' },
+                    ]}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={44}
+                    outerRadius={64}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    <Cell fill="#2f6df6" />
+                    <Cell fill="#e8eef9" />
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
+                    formatter={(v: number) => v.toLocaleString()}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-center -mt-[96px] mb-[60px] pointer-events-none">
+                <div className="text-center">
+                  <div className="text-2xl font-extrabold text-brand-950 tabular-nums">{preview.coverage}%</div>
+                  <div className="text-[11px] text-slate-400">of population</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-4 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: '#2f6df6' }} /> Reviewed</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: '#e8eef9' }} /> Rest of book</span>
               </div>
             </Card>
 
