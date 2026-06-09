@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles } from 'lucide-react'
+import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 
 const links = [
   { to: '/dashboard', label: 'Quality Dashboard', icon: LayoutDashboard },
   { to: '/queue', label: 'Review Queue', icon: ClipboardCheck },
+  { to: '/how-it-works', label: 'How It Works', icon: Workflow },
 ]
 
 export default function Sidebar() {

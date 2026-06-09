@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Queue from './pages/Queue'
 import Review from './pages/Review'
+import HowItWorks from './pages/HowItWorks'
 import Sidebar from './components/Sidebar'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/review/:id" element={<Review />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
