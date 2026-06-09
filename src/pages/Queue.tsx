@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, ArrowRight, Clock, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Search, ArrowRight, Clock, Sparkles, CheckCircle2, UserCheck, Activity } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { Card, LinePill, SeverityChip, PageHeader } from '../components/ui'
 import { Line } from '../data/types'
@@ -9,19 +9,26 @@ import { currency } from '../lib/scoring'
 const FILTERS: ('All' | Line)[] = ['All', 'Property', 'Auto', 'Casualty']
 
 export default function Queue() {
-  const { reviewClaims, completedReviews } = useStore()
+  const { reviewClaims, completedReviews, assignments, currentUser } = useStore()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<'All' | Line>('All')
+  const [typeFilter, setTypeFilter] = useState<'All' | 'Diagnostic' | 'Targeted'>('All')
+  const [myQueue, setMyQueue] = useState(false)
   const [q, setQ] = useState('')
+
+  const assignedCount = Object.keys(assignments).length
 
   const filtered = useMemo(() => {
     return reviewClaims.filter((c) => {
+      const a = assignments[c.id]
       if (filter !== 'All' && c.line !== filter) return false
+      if (typeFilter !== 'All' && a?.reviewType !== typeFilter) return false
+      if (myQueue && a?.reviewer !== currentUser?.name) return false
       if (q && !`${c.claimNumber} ${c.insured} ${c.perilType}`.toLowerCase().includes(q.toLowerCase()))
         return false
       return true
     })
-  }, [reviewClaims, filter, q])
+  }, [reviewClaims, filter, typeFilter, myQueue, q, assignments, currentUser])
 
   return (
     <div className="bg-grid min-h-screen">
@@ -52,6 +59,20 @@ export default function Queue() {
               </button>
             ))}
           </div>
+          {assignedCount > 0 && (
+            <>
+              <div className="flex bg-white rounded-xl border border-brand-100 p-1 shadow-card">
+                {(['All', 'Diagnostic', 'Targeted'] as const).map((t) => (
+                  <button key={t} onClick={() => setTypeFilter(t)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${typeFilter === t ? 'bg-brand-600 text-white' : 'text-slate-500 hover:text-brand-700'}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setMyQueue((m) => !m)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border shadow-card transition-colors ${myQueue ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-brand-100 text-slate-600 hover:text-brand-700'}`}>
+                <UserCheck size={15} /> My queue
+              </button>
+            </>
+          )}
           <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -101,8 +122,20 @@ export default function Queue() {
                       )}
                     </div>
                   </div>
-                  <div className="shrink-0 flex items-center gap-2 text-brand-600 font-semibold text-sm group-hover:gap-3 transition-all">
-                    Review <ArrowRight size={18} />
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                    {assignments[c.id] && (
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className={`flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full ${assignments[c.id].reviewType === 'Targeted' ? 'bg-violet-50 text-violet-700' : 'bg-sky-50 text-sky-700'}`}>
+                          <Activity size={10} /> {assignments[c.id].reviewType}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-500 font-medium">
+                          <UserCheck size={11} /> {assignments[c.id].reviewer}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-brand-600 font-semibold text-sm group-hover:gap-3 transition-all">
+                      Review <ArrowRight size={18} />
+                    </div>
                   </div>
                 </div>
               </Card>

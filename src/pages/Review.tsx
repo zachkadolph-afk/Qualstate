@@ -47,10 +47,15 @@ export default function Review() {
 
 function ReviewInner({ claim }: { claim: Claim }) {
   const navigate = useNavigate()
-  const { submitReview, reviewer } = useStore()
+  const { submitReview, reviewer, getFormForClaim } = useStore()
   const [answers, setAnswers] = useState<Record<string, ReviewerAnswer>>({})
 
-  const questions = QUESTIONNAIRES[claim.line]
+  // the form this claim is reviewed against (coordinated). Only show questions
+  // that have a matching AI answer so display + scoring stay consistent.
+  const form = getFormForClaim(claim)
+  const questions = (form?.questions ?? QUESTIONNAIRES[claim.line]).filter((q) =>
+    claim.agentAnswers.some((a) => a.questionId === q.id),
+  )
   const result = useMemo(() => computeReview(claim, answers), [claim, answers])
   const answered = Object.values(answers).filter((a) => a.decision).length
   const allAnswered = answered === questions.length
@@ -82,6 +87,8 @@ function ReviewInner({ claim }: { claim: Claim }) {
       qualityScore: result.qualityScore,
       agentScore: result.agentScore,
       calibration: result.calibration,
+      formId: form?.id,
+      reviewType: form?.reviewType,
     })
     navigate('/dashboard')
   }
@@ -197,6 +204,16 @@ function ReviewInner({ claim }: { claim: Claim }) {
               title="Validate the AI first-pass"
               sub="Agree or disagree with each answer. Disagreements train the model."
             />
+            {form && (
+              <div className="mb-3 flex items-center gap-2 text-xs flex-wrap">
+                <span className="flex items-center gap-1.5 bg-brand-50 text-brand-700 font-semibold px-2.5 py-1 rounded-full">
+                  <FileText size={12} /> {form.name}
+                </span>
+                <span className={`font-semibold px-2.5 py-1 rounded-full ${form.reviewType === 'Targeted' ? 'bg-violet-50 text-violet-700' : 'bg-sky-50 text-sky-700'}`}>
+                  {form.reviewType === 'Targeted' ? 'Real-time (targeted)' : 'Outcome-based (diagnostic)'}
+                </span>
+              </div>
+            )}
             <div className="space-y-4">
               {questions.map((q, idx) => {
                 const agent = claim.agentAnswers.find((a) => a.questionId === q.id)!
