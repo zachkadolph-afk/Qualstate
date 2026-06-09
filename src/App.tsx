@@ -9,6 +9,8 @@ import Review from './pages/Review'
 import HowItWorks from './pages/HowItWorks'
 import Scorecards from './pages/Scorecards'
 import Calibration from './pages/Calibration'
+import Coaching from './pages/Coaching'
+import Audit from './pages/Audit'
 import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
 import Rules from './pages/Rules'
 import UserManagement from './pages/UserManagement'
@@ -40,6 +42,8 @@ export default function App() {
           <Route path="/review/:id" element={<Review />} />
           <Route path="/scorecards" element={<Scorecards />} />
           <Route path="/calibration" element={<Calibration />} />
+          <Route path="/coaching" element={<Coaching />} />
+          <Route path="/audit" element={admin ? <Audit /> : <Navigate to="/dashboard" replace />} />
           <Route path="/questionnaire" element={admin ? <QuestionnaireBuilder /> : <Navigate to="/dashboard" replace />} />
           <Route path="/rules" element={admin ? <Rules /> : <Navigate to="/dashboard" replace />} />
           <Route path="/users" element={admin ? <UserManagement /> : <Navigate to="/dashboard" replace />} />

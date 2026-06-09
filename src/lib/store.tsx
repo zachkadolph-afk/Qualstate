@@ -5,6 +5,8 @@ import { ReviewForm, ReviewType, buildFormLibrary, cloneSpine } from '../data/fo
 import { User, seedUsers, assignableReviewers } from '../data/users'
 import { AssignmentRule, seedRules, matchRule } from '../data/rules'
 import { POP_CLAIMS } from '../data/population'
+import { AuditEvent, seedAudit } from '../data/audit'
+import { CoachingItem, seedCoaching } from '../data/coaching'
 
 /* ------------------------------------------------------------------ */
 /*  Coordinated, persisted system of record. Every module reads/writes */
@@ -48,6 +50,12 @@ interface Store {
   removeRule: (id: string) => void
   moveRule: (id: string, dir: -1 | 1) => void
 
+  // audit trail (read-only log) + coaching/dispute loop
+  audit: AuditEvent[]
+  coaching: CoachingItem[]
+  addCoaching: (item: Omit<CoachingItem, 'id' | 'createdAt' | 'createdBy'>) => void
+  updateCoaching: (id: string, patch: Partial<CoachingItem>) => void
+
   // claims & reviews
   reviewClaims: Claim[]
   completedReviews: CompletedReview[]
@@ -72,6 +80,7 @@ interface Persisted {
   forms: ReviewForm[]
   users: User[]
   rules: AssignmentRule[]
+  coaching: CoachingItem[]
   currentUserId: string
   submitted: CompletedReview[]
   completedIds: string[]
@@ -106,6 +115,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [forms, setForms] = useState<ReviewForm[]>(() => boot?.forms ?? buildFormLibrary())
   const [users, setUsers] = useState<User[]>(() => boot?.users ?? seedUsers())
   const [rules, setRules] = useState<AssignmentRule[]>(() => boot?.rules ?? seedRules(boot?.forms ?? buildFormLibrary()))
+  const [coaching, setCoaching] = useState<CoachingItem[]>(() => boot?.coaching ?? seedCoaching())
+  const [audit, setAudit] = useState<AuditEvent[]>(() => seedAudit())
   const [currentUserId, setCurrentUserId] = useState<string>(() => boot?.currentUserId ?? '')
   const [submitted, setSubmitted] = useState<CompletedReview[]>(() => boot?.submitted ?? [])
   const [completedIds, setCompletedIds] = useState<string[]>(() => boot?.completedIds ?? [])
@@ -114,13 +125,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // persist on any change
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ forms, users, rules, currentUserId, submitted, completedIds, assignments }))
+      localStorage.setItem(KEY, JSON.stringify({ forms, users, rules, coaching, currentUserId, submitted, completedIds, assignments }))
     } catch {
       /* ignore quota errors */
     }
-  }, [forms, users, rules, currentUserId, submitted, completedIds, assignments])
+  }, [forms, users, rules, coaching, currentUserId, submitted, completedIds, assignments])
 
   const currentUser = users.find((u) => u.id === currentUserId) || assignableReviewers(users)[0] || users[0]
+  const logEvent = (action: string, detail: string) =>
+    setAudit((a) => [{ id: newId('aud'), at: new Date().toISOString(), actor: currentUser?.name ?? 'system', action, detail }, ...a].slice(0, 300))
 
   const completedSet = new Set(completedIds)
   const completedReviews = [...submitted, ...COMPLETED_REVIEWS]
@@ -155,7 +168,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     login: (email: string) => {
       const match = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.status !== 'Disabled')
       const fallback = assignableReviewers(users)[0] || users[0]
-      setCurrentUserId((match || fallback)?.id ?? '')
+      const u = match || fallback
+      setCurrentUserId(u?.id ?? '')
+      setAudit((a) => [{ id: newId('aud'), at: new Date().toISOString(), actor: u?.name ?? email, action: 'Signed in', detail: `${u?.role ?? 'Reviewer'} session` }, ...a].slice(0, 300))
     },
 
     forms,
@@ -190,14 +205,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateForm: (id, fn) => setForms((fs) => fs.map((f) => (f.id === id ? fn(f) : f))),
 
     users,
-    addUser: (u) => setUsers((us) => [{ ...u, id: newId('u') }, ...us]),
-    updateUser: (id, patch) => setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...patch } : u))),
+    addUser: (u) => {
+      setUsers((us) => [{ ...u, id: newId('u') }, ...us])
+      logEvent('User invited', `${u.email} as ${u.role}`)
+    },
+    updateUser: (id, patch) => {
+      setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...patch } : u)))
+      const u = users.find((x) => x.id === id)
+      logEvent('User updated', `${u?.name ?? id}${patch.role ? ' · ' + patch.role : ''}${patch.status ? ' · ' + patch.status : ''}${patch.team ? ' · ' + patch.team : ''}`)
+    },
 
     rules,
-    addRule: () =>
-      setRules((rs) => [...rs, { id: newId('rule'), line: 'Any', peril: 'Any', segment: 'Any', reviewType: 'Any', formId: forms.find((f) => f.status === 'Published')?.id ?? '', team: 'Any', enabled: true }]),
+    addRule: () => {
+      setRules((rs) => [...rs, { id: newId('rule'), line: 'Any', peril: 'Any', segment: 'Any', reviewType: 'Any', formId: forms.find((f) => f.status === 'Published')?.id ?? '', team: 'Any', enabled: true }])
+      logEvent('Rule added', 'New assignment rule')
+    },
     updateRule: (id, patch) => setRules((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r))),
-    removeRule: (id) => setRules((rs) => rs.filter((r) => r.id !== id)),
+    removeRule: (id) => {
+      setRules((rs) => rs.filter((r) => r.id !== id))
+      logEvent('Rule removed', `rule ${id}`)
+    },
     moveRule: (id, dir) =>
       setRules((rs) => {
         const arr = [...rs]
@@ -217,7 +244,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCompletedIds((prev) => (prev.includes(review.claimId) ? prev : [...prev, review.claimId]))
       // credit the reviewer
       setUsers((us) => us.map((u) => (u.name === review.reviewer ? { ...u, reviews: u.reviews + 1, lastActive: review.completedAt } : u)))
+      logEvent('Review submitted', `${review.claimId} · quality ${review.qualityScore} · cal ${review.calibration}%`)
     },
+
+    audit,
+    coaching,
+    addCoaching: (item) => {
+      setCoaching((cs) => [{ ...item, id: newId('co'), createdBy: currentUser?.name ?? 'system', createdAt: new Date().toISOString().slice(0, 10) }, ...cs])
+      logEvent(item.kind === 'Dispute' ? 'Dispute raised' : 'Coaching opened', `${item.claimNumber} · ${item.claimType}`)
+    },
+    updateCoaching: (id, patch) => setCoaching((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c))),
 
     assignments,
     runAssignment: ({ reviewType, method }) => {
@@ -241,6 +277,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next[claim.id] = { claimId: claim.id, reviewer, formId: form?.id ?? '', reviewType }
       })
       setAssignments(next)
+      logEvent('Assignment run', `${Object.keys(next).length} files as ${reviewType}`)
       return Object.keys(next).length
     },
     assignFiles: (files, { reviewType, method, reviewers, autoRoute }) => {
@@ -273,6 +310,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         assigned++
       })
       setAssignments(next)
+      logEvent('Files assigned', `${assigned} ${reviewType} files${autoRoute ? ' (routed by rules)' : ''}`)
       return assigned
     },
     clearAssignments: () => setAssignments({}),
@@ -287,6 +325,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setForms(freshForms)
       setUsers(seedUsers())
       setRules(seedRules(freshForms))
+      setCoaching(seedCoaching())
+      setAudit(seedAudit())
       setCurrentUserId('')
       setSubmitted([])
       setCompletedIds([])

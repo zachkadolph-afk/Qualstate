@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, HeartPulse, ListChecks, Users, Filter, Gauge, RotateCcw, GitBranch } from 'lucide-react'
+import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, HeartPulse, ListChecks, Users, Filter, Gauge, RotateCcw, GitBranch, GraduationCap, ScrollText } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 import { canConfigure } from '../data/users'
@@ -9,10 +9,12 @@ const links = [
   { to: '/queue', label: 'Review Queue', icon: ClipboardCheck, config: false },
   { to: '/scorecards', label: 'Claim Type Health', icon: HeartPulse, config: false },
   { to: '/calibration', label: 'Model Reliability', icon: Gauge, config: false },
+  { to: '/coaching', label: 'Coaching & Disputes', icon: GraduationCap, config: false },
   { to: '/questionnaire', label: 'Questionnaire Builder', icon: ListChecks, config: true },
   { to: '/rules', label: 'Assignment Rules', icon: GitBranch, config: true },
   { to: '/users', label: 'User Management', icon: Users, config: true },
   { to: '/sampling', label: 'Sampling & Assignment', icon: Filter, config: true },
+  { to: '/audit', label: 'Audit Trail', icon: ScrollText, config: true },
   { to: '/how-it-works', label: 'Vision', icon: Workflow, config: false },
 ]
 
