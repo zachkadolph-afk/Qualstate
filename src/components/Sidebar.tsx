@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, Trophy, ListChecks, Users, Filter, Gauge, RotateCcw } from 'lucide-react'
+import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, Trophy, ListChecks, Users, Filter, Gauge, RotateCcw, GitBranch } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 import { canConfigure } from '../data/users'
@@ -10,6 +10,7 @@ const links = [
   { to: '/scorecards', label: 'Adjuster Scorecards', icon: Trophy, config: false },
   { to: '/calibration', label: 'Model Reliability', icon: Gauge, config: false },
   { to: '/questionnaire', label: 'Questionnaire Builder', icon: ListChecks, config: true },
+  { to: '/rules', label: 'Assignment Rules', icon: GitBranch, config: true },
   { to: '/users', label: 'User Management', icon: Users, config: true },
   { to: '/sampling', label: 'Sampling & Assignment', icon: Filter, config: true },
   { to: '/how-it-works', label: 'Vision', icon: Workflow, config: false },

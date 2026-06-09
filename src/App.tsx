@@ -10,6 +10,7 @@ import HowItWorks from './pages/HowItWorks'
 import Scorecards from './pages/Scorecards'
 import Calibration from './pages/Calibration'
 import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
+import Rules from './pages/Rules'
 import UserManagement from './pages/UserManagement'
 import Sampling from './pages/Sampling'
 import Sidebar from './components/Sidebar'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/scorecards" element={<Scorecards />} />
           <Route path="/calibration" element={<Calibration />} />
           <Route path="/questionnaire" element={admin ? <QuestionnaireBuilder /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/rules" element={admin ? <Rules /> : <Navigate to="/dashboard" replace />} />
           <Route path="/users" element={admin ? <UserManagement /> : <Navigate to="/dashboard" replace />} />
           <Route path="/sampling" element={admin ? <Sampling /> : <Navigate to="/dashboard" replace />} />
           <Route path="/how-it-works" element={<HowItWorks />} />

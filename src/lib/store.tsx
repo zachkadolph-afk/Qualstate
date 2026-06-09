@@ -3,6 +3,7 @@ import { Claim, CompletedReview, Line } from '../data/types'
 import { COMPLETED_REVIEWS, HISTORY_CLAIMS, REVIEW_CLAIMS } from '../data/claims'
 import { ReviewForm, ReviewType, buildFormLibrary, cloneSpine } from '../data/forms'
 import { User, seedUsers, assignableReviewers } from '../data/users'
+import { AssignmentRule, seedRules, matchRule } from '../data/rules'
 
 /* ------------------------------------------------------------------ */
 /*  Coordinated, persisted system of record. Every module reads/writes */
@@ -39,6 +40,13 @@ interface Store {
   addUser: (u: Omit<User, 'id'>) => void
   updateUser: (id: string, patch: Partial<User>) => void
 
+  // assignment rules (attributes -> form + team)
+  rules: AssignmentRule[]
+  addRule: () => void
+  updateRule: (id: string, patch: Partial<AssignmentRule>) => void
+  removeRule: (id: string) => void
+  moveRule: (id: string, dir: -1 | 1) => void
+
   // claims & reviews
   reviewClaims: Claim[]
   completedReviews: CompletedReview[]
@@ -62,6 +70,7 @@ const KEY = 'qualstate_state_v2'
 interface Persisted {
   forms: ReviewForm[]
   users: User[]
+  rules: AssignmentRule[]
   currentUserId: string
   submitted: CompletedReview[]
   completedIds: string[]
@@ -95,6 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const [forms, setForms] = useState<ReviewForm[]>(() => boot?.forms ?? buildFormLibrary())
   const [users, setUsers] = useState<User[]>(() => boot?.users ?? seedUsers())
+  const [rules, setRules] = useState<AssignmentRule[]>(() => boot?.rules ?? seedRules(boot?.forms ?? buildFormLibrary()))
   const [currentUserId, setCurrentUserId] = useState<string>(() => boot?.currentUserId ?? '')
   const [submitted, setSubmitted] = useState<CompletedReview[]>(() => boot?.submitted ?? [])
   const [completedIds, setCompletedIds] = useState<string[]>(() => boot?.completedIds ?? [])
@@ -103,11 +113,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // persist on any change
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ forms, users, currentUserId, submitted, completedIds, assignments }))
+      localStorage.setItem(KEY, JSON.stringify({ forms, users, rules, currentUserId, submitted, completedIds, assignments }))
     } catch {
       /* ignore quota errors */
     }
-  }, [forms, users, currentUserId, submitted, completedIds, assignments])
+  }, [forms, users, rules, currentUserId, submitted, completedIds, assignments])
 
   const currentUser = users.find((u) => u.id === currentUserId) || assignableReviewers(users)[0] || users[0]
 
@@ -118,8 +128,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const getClaim = (id: string) => REVIEW_CLAIMS.find((c) => c.id === id) || HISTORY_CLAIMS[id]
   const getFormForClaim = (claim: Claim) => {
     const a = assignments[claim.id]
-    if (a) return forms.find((f) => f.id === a.formId) || publishedFormFor(forms, claim.line, a.reviewType)
-    return publishedFormFor(forms, claim.line)
+    // an explicit assignment form (from sampling) wins
+    if (a?.formId) {
+      const f = forms.find((x) => x.id === a.formId)
+      if (f) return f
+    }
+    // otherwise the rules engine selects the form by attributes
+    const rule = matchRule(rules, claim.line, claim.perilType, a?.reviewType)
+    if (rule?.formId) {
+      const f = forms.find((x) => x.id === rule.formId)
+      if (f) return f
+    }
+    return publishedFormFor(forms, claim.line, a?.reviewType)
   }
 
   const value: Store = {
@@ -165,6 +185,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     users,
     addUser: (u) => setUsers((us) => [{ ...u, id: newId('u') }, ...us]),
     updateUser: (id, patch) => setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...patch } : u))),
+
+    rules,
+    addRule: () =>
+      setRules((rs) => [...rs, { id: newId('rule'), line: 'Any', peril: 'Any', segment: 'Any', reviewType: 'Any', formId: forms.find((f) => f.status === 'Published')?.id ?? '', team: 'Any', enabled: true }]),
+    updateRule: (id, patch) => setRules((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r))),
+    removeRule: (id) => setRules((rs) => rs.filter((r) => r.id !== id)),
+    moveRule: (id, dir) =>
+      setRules((rs) => {
+        const arr = [...rs]
+        const i = arr.findIndex((r) => r.id === id)
+        const j = i + dir
+        if (j < 0 || j >= arr.length) return rs
+        ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        return arr
+      }),
 
     reviewClaims,
     completedReviews,
@@ -232,8 +267,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
-      setForms(buildFormLibrary())
+      const freshForms = buildFormLibrary()
+      setForms(freshForms)
       setUsers(seedUsers())
+      setRules(seedRules(freshForms))
       setCurrentUserId('')
       setSubmitted([])
       setCompletedIds([])
