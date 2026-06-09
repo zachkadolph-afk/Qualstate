@@ -100,9 +100,9 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Quick sign-in as</div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'Reviewer', email: 'a.reyes@qualstate.ai' },
+                { label: 'Reviewer', email: 't.coleman@qualstate.ai' },
+                { label: 'Lead Reviewer', email: 'a.reyes@qualstate.ai' },
                 { label: 'Manager', email: 'p.okonkwo@qualstate.ai' },
-                { label: 'Technical Analyst', email: 'r.okafor@qualstate.ai' },
                 { label: 'System Manager', email: 'd.whitfield@qualstate.ai' },
               ].map((p) => (
                 <button

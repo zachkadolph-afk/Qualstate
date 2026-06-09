@@ -49,6 +49,7 @@ interface Store {
   // sampling -> queue assignment
   assignments: Record<string, Assignment>
   runAssignment: (opts: AssignmentOpts) => number
+  assignFiles: (files: { id: string; line: Line }[], opts: { reviewType: ReviewType; method: AssignmentOpts['method']; reviewers?: string[] }) => number
   clearAssignments: () => void
 
   resetDemo: () => void
@@ -56,7 +57,7 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null)
 
-const KEY = 'qualstate_state_v1'
+const KEY = 'qualstate_state_v2'
 
 interface Persisted {
   forms: ReviewForm[]
@@ -199,6 +200,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
       setAssignments(next)
       return Object.keys(next).length
+    },
+    assignFiles: (files, { reviewType, method, reviewers }) => {
+      const poolNames = reviewers && reviewers.length ? reviewers : assignableReviewers(users).map((u) => u.name)
+      if (poolNames.length === 0 || files.length === 0) return 0
+      const next = { ...assignments }
+      const load: Record<string, number> = {}
+      poolNames.forEach((n) => (load[n] = 0))
+      Object.values(next).forEach((a) => {
+        if (load[a.reviewer] != null) load[a.reviewer]++
+      })
+      files.forEach((f, i) => {
+        let reviewer: string
+        if (method === 'load-balanced') {
+          reviewer = poolNames.reduce((m, n) => (load[n] < load[m] ? n : m), poolNames[0])
+          load[reviewer]++
+        } else {
+          reviewer = poolNames[i % poolNames.length]
+        }
+        const form = publishedFormFor(forms, f.line, reviewType)
+        next[f.id] = { claimId: f.id, reviewer, formId: form?.id ?? '', reviewType }
+      })
+      setAssignments(next)
+      return files.length
     },
     clearAssignments: () => setAssignments({}),
 

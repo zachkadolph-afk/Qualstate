@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { UserPlus, ShieldCheck, KeyRound, Search, Circle } from 'lucide-react'
 import { Card, PageHeader } from '../components/ui'
 import { useStore } from '../lib/store'
-import { Role, UserStatus, ROLES } from '../data/users'
+import { Role, UserStatus, ROLES, TEAMS, Team } from '../data/users'
 
 /* ------------------------------------------------------------------ */
 /*  User Management — now reads/writes the shared store, so roles and  */
@@ -13,7 +13,6 @@ const ROLE_STYLE: Record<Role, string> = {
   Reviewer: 'bg-brand-50 text-brand-700 border-brand-200',
   'Lead Reviewer': 'bg-violet-50 text-violet-700 border-violet-200',
   Manager: 'bg-amber-50 text-amber-700 border-amber-200',
-  'Technical Analyst': 'bg-teal-50 text-teal-700 border-teal-200',
   'System Manager': 'bg-slate-800 text-white border-slate-800',
 }
 const STATUS_DOT: Record<UserStatus, string> = {
@@ -43,7 +42,7 @@ export default function UserManagement() {
   const counts = useMemo(() => {
     const active = users.filter((u) => u.status === 'Active').length
     const invited = users.filter((u) => u.status === 'Invited').length
-    const admins = users.filter((u) => u.role === 'System Manager' || u.role === 'Technical Analyst' || u.role === 'Manager').length
+    const admins = users.filter((u) => u.role === 'System Manager' || u.role === 'Manager').length
     return { active, invited, admins }
   }, [users])
 
@@ -56,7 +55,7 @@ export default function UserManagement() {
       .map((p) => (p ? p[0].toUpperCase() + (p.length > 1 ? p.slice(1) : '') : ''))
       .join(' ')
       .replace(/(\b\w) /g, '$1. ')
-    addUser({ name: name || email, email, role: inviteRole, status: 'Invited', lastActive: '—', reviews: 0 })
+    addUser({ name: name || email, email, role: inviteRole, team: '—', status: 'Invited', lastActive: '—', reviews: 0 })
     setInviteEmail('')
     setInviteOpen(false)
   }
@@ -116,15 +115,16 @@ export default function UserManagement() {
         </div>
 
         <Card className="p-0 overflow-hidden">
-          <div className="grid grid-cols-[1.6fr_1fr_0.8fr_0.8fr] gap-3 px-5 py-3 border-b border-brand-50 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <div className="grid grid-cols-[1.5fr_1fr_1fr_0.6fr_0.8fr] gap-3 px-5 py-3 border-b border-brand-50 text-[11px] font-bold uppercase tracking-wide text-slate-400">
             <span>User</span>
             <span>Role</span>
+            <span>Team</span>
             <span>Reviews</span>
             <span className="text-right">Status</span>
           </div>
           <div className="divide-y divide-brand-50">
             {filtered.map((u) => (
-              <div key={u.id} className="grid grid-cols-[1.6fr_1fr_0.8fr_0.8fr] gap-3 px-5 py-3 items-center">
+              <div key={u.id} className="grid grid-cols-[1.5fr_1fr_1fr_0.6fr_0.8fr] gap-3 px-5 py-3 items-center">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-accent-500 grid place-items-center text-white font-bold text-xs shrink-0">
                     {u.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
@@ -142,6 +142,12 @@ export default function UserManagement() {
                     {ROLES.map((r) => (
                       <option key={r} value={r} className="bg-white text-slate-800">{r}</option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <select value={u.team} onChange={(e) => updateUser(u.id, { team: e.target.value as Team | '—' })} className="text-xs text-slate-600 bg-slate-50 rounded-md px-2 py-1 focus:outline-none cursor-pointer max-w-full">
+                    <option value="—">—</option>
+                    {TEAMS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div className="text-sm text-slate-600 tabular-nums">{u.reviews || '—'}</div>

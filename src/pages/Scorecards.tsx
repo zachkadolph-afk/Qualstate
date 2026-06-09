@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import { Card, PageHeader, LinePill, ScoreRing } from '../components/ui'
 import { scoreBand } from '../lib/scoring'
 import { Line } from '../data/types'
+import { TEAMS, Team } from '../data/users'
 
 /* ------------------------------------------------------------------ */
 /*  Adjuster Scorecards — read-only analytics derived from the         */
@@ -22,12 +23,24 @@ interface AdjusterAgg {
 }
 
 export default function Scorecards() {
-  const { completedReviews, getClaim } = useStore()
+  const { completedReviews, getClaim, users } = useStore()
   const [selected, setSelected] = useState<string | null>(null)
+  const [team, setTeam] = useState<'All' | Team>('All')
+
+  const reviewerTeam = useMemo(() => {
+    const m: Record<string, string> = {}
+    users.forEach((u) => (m[u.name] = u.team))
+    return m
+  }, [users])
+
+  const reviews = useMemo(
+    () => (team === 'All' ? completedReviews : completedReviews.filter((r) => reviewerTeam[r.reviewer] === team)),
+    [completedReviews, team, reviewerTeam],
+  )
 
   const adjusters = useMemo<AdjusterAgg[]>(() => {
     const map: Record<string, AdjusterAgg> = {}
-    for (const r of completedReviews) {
+    for (const r of reviews) {
       const claim = getClaim(r.claimId)
       if (!claim) continue
       const a = (map[claim.adjuster] ??= {
@@ -55,7 +68,7 @@ export default function Scorecards() {
       avgDelta: Math.round(a.avgDelta / a.count),
     }))
     return out.sort((x, y) => y.avgQuality - x.avgQuality)
-  }, [completedReviews, getClaim])
+  }, [reviews, getClaim])
 
   const teamAvg = useMemo(() => {
     if (adjusters.length === 0) return { quality: 0, calibration: 0 }
@@ -67,11 +80,11 @@ export default function Scorecards() {
   const sel = adjusters.find((a) => a.adjuster === selected) || adjusters[0]
   const selReviews = useMemo(() => {
     if (!sel) return []
-    return completedReviews
+    return reviews
       .filter((r) => getClaim(r.claimId)?.adjuster === sel.adjuster)
       .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
       .slice(0, 6)
-  }, [sel, completedReviews, getClaim])
+  }, [sel, reviews, getClaim])
 
   return (
     <div className="bg-grid min-h-screen">
@@ -87,6 +100,22 @@ export default function Scorecards() {
           }
         />
 
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">Team</span>
+          {(['All', ...TEAMS] as ('All' | Team)[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => { setTeam(t); setSelected(null) }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${team === t ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-brand-100 text-slate-500 hover:text-brand-700'}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {adjusters.length === 0 ? (
+          <Card className="p-12 text-center text-slate-400">No reviews for this team yet.</Card>
+        ) : (
         <div className="grid lg:grid-cols-[1fr_360px] gap-6">
           {/* ranked table */}
           <Card className="p-0 overflow-hidden h-fit">
@@ -232,6 +261,7 @@ export default function Scorecards() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   )
