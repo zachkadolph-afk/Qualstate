@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import { Card, PageHeader, LinePill, ScoreRing } from '../components/ui'
 import { scoreBand } from '../lib/scoring'
 import { Line } from '../data/types'
-import { TEAMS, Team } from '../data/users'
+import { Scope, ALL_SCOPE, inScope } from '../lib/scope'
 
 /* ------------------------------------------------------------------ */
 /*  Claim Type Health — organizational health by TYPE of claim, not by */
@@ -28,9 +28,8 @@ function basePeril(perilType: string): string {
 
 const LINE_COLORS: Record<string, string> = { Property: '#1c4fe0', Auto: '#10b981', Casualty: '#8b5cf6' }
 
-export default function Scorecards() {
+export default function Scorecards({ scope = ALL_SCOPE }: { scope?: Scope }) {
   const { completedReviews, getClaim, users } = useStore()
-  const [team, setTeam] = useState<'All' | Team>('All')
   const [selected, setSelected] = useState<string | null>(null)
 
   const reviewerTeam = useMemo(() => {
@@ -40,8 +39,8 @@ export default function Scorecards() {
   }, [users])
 
   const reviews = useMemo(
-    () => (team === 'All' ? completedReviews : completedReviews.filter((r) => reviewerTeam[r.reviewer] === team)),
-    [completedReviews, team, reviewerTeam],
+    () => completedReviews.filter((r) => inScope(getClaim(r.claimId), reviewerTeam[r.reviewer], scope)),
+    [completedReviews, getClaim, reviewerTeam, scope],
   )
 
   const { types, byLine, overall } = useMemo(() => {
@@ -116,16 +115,6 @@ export default function Scorecards() {
           }
         />
 
-        {/* team lens + KPIs */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">Team</span>
-          {(['All', ...TEAMS] as ('All' | Team)[]).map((t) => (
-            <button key={t} onClick={() => { setTeam(t); setSelected(null) }} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${team === t ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-brand-100 text-slate-500 hover:text-brand-700'}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Kpi icon={TrendingUp} label="Avg quality" value={`${overall.avgQ}`} sub={scoreBand(overall.avgQ).label} />
           <Kpi icon={Gauge} label="AI calibration" value={`${overall.avgCal}%`} sub="reviewer/agent" orange />
@@ -140,7 +129,7 @@ export default function Scorecards() {
         </div>
 
         {types.length === 0 ? (
-          <Card className="p-12 text-center text-slate-400">No reviews for this team yet.</Card>
+          <Card className="p-12 text-center text-slate-400">No reviews match these filters yet.</Card>
         ) : (
           <div className="grid lg:grid-cols-[1fr_360px] gap-6">
             {/* ranked claim types — worst first */}

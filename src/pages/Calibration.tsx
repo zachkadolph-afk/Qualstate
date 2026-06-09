@@ -15,6 +15,7 @@ import { Gauge, Sparkles, AlertTriangle, CheckCircle2, Target } from 'lucide-rea
 import { useStore } from '../lib/store'
 import { Card, PageHeader } from '../components/ui'
 import { QUESTIONNAIRES } from '../data/questions'
+import { Scope, ALL_SCOPE, inScope } from '../lib/scope'
 
 /* ------------------------------------------------------------------ */
 /*  Calibration / Model Reliability — read-only analytics over the     */
@@ -31,8 +32,18 @@ const tooltipStyle = {
   fontSize: 12,
 }
 
-export default function Calibration() {
-  const { completedReviews, getClaim } = useStore()
+export default function Calibration({ scope = ALL_SCOPE }: { scope?: Scope }) {
+  const { completedReviews, getClaim, users } = useStore()
+
+  const reviewerTeam = useMemo(() => {
+    const m: Record<string, string> = {}
+    users.forEach((u) => (m[u.name] = u.team))
+    return m
+  }, [users])
+  const reviews = useMemo(
+    () => completedReviews.filter((r) => inScope(getClaim(r.claimId), reviewerTeam[r.reviewer], scope)),
+    [completedReviews, getClaim, reviewerTeam, scope],
+  )
 
   const data = useMemo(() => {
     const qAgg: Record<string, { agree: number; total: number }> = {}
@@ -45,7 +56,7 @@ export default function Calibration() {
     let totalAgree = 0
     let totalAnswers = 0
 
-    for (const r of completedReviews) {
+    for (const r of reviews) {
       const claim = getClaim(r.claimId)
       for (const a of r.reviewerAnswers) {
         const agentAnswer = claim?.agentAnswers.find((x) => x.questionId === a.questionId)
@@ -83,7 +94,7 @@ export default function Calibration() {
     }))
 
     // weekly calibration trend
-    const sorted = [...completedReviews].sort((a, b) => a.completedAt.localeCompare(b.completedAt))
+    const sorted = [...reviews].sort((a, b) => a.completedAt.localeCompare(b.completedAt))
     const weekly: Record<string, { cal: number; count: number }> = {}
     for (const r of sorted) {
       const d = new Date(r.completedAt)
@@ -106,7 +117,7 @@ export default function Calibration() {
       best: byQuestion[0],
       worst: byQuestion[byQuestion.length - 1],
     }
-  }, [completedReviews, getClaim])
+  }, [reviews, getClaim])
 
   return (
     <div className="bg-grid min-h-screen">
