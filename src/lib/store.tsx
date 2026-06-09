@@ -74,7 +74,7 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null)
 
-const KEY = 'qualstate_state_v2'
+const KEY = 'qualstate_state_v3'
 
 interface Persisted {
   forms: ReviewForm[]
@@ -251,7 +251,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     coaching,
     addCoaching: (item) => {
       setCoaching((cs) => [{ ...item, id: newId('co'), createdBy: currentUser?.name ?? 'system', createdAt: new Date().toISOString().slice(0, 10) }, ...cs])
-      logEvent(item.kind === 'Dispute' ? 'Dispute raised' : 'Coaching opened', `${item.claimNumber} · ${item.claimType}`)
+      logEvent(item.kind === 'Rebuttal' ? 'Rebuttal submitted' : 'Result validated', `${item.claimNumber} · ${item.claimType}`)
     },
     updateCoaching: (id, patch) => setCoaching((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c))),
 

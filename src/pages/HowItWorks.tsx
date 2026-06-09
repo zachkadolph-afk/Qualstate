@@ -116,8 +116,8 @@ const MODULE_GROUPS: {
       },
       {
         icon: GraduationCap,
-        title: 'Coaching & Dispute Loop',
-        body: 'Closes the loop: adjuster coaching and remediation, score dispute/appeal, and calibration sessions so findings drive real change.',
+        title: 'Model Feedback Loop',
+        body: 'Closes the loop: reviewers validate or rebut disseminated results, and that human input becomes the signal that corrects and retrains the model.',
       },
       {
         icon: BarChart3,
