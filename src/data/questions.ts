@@ -46,16 +46,14 @@ export const QUESTIONNAIRES: Record<Line, Question[]> = {
 }
 
 export const ANSWER_LABEL: Record<string, string> = {
-  yes: 'Met',
-  partial: 'Partially Met',
-  no: 'Not Met',
+  yes: 'Yes',
+  no: 'No',
   na: 'N/A',
 }
 
 /** points contributed toward the quality score by answer value */
 export const ANSWER_POINTS: Record<string, number> = {
   yes: 1,
-  partial: 0.5,
   no: 0,
   na: 1, // N/A items are excluded from the denominator instead
 }

@@ -22,7 +22,6 @@ import { Claim } from '../data/types'
 
 const VALUE_STYLE: Record<AnswerValue, { ring: string; text: string; dot: string }> = {
   yes: { ring: 'border-emerald-300 bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  partial: { ring: 'border-amber-300 bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   no: { ring: 'border-red-300 bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
   na: { ring: 'border-slate-300 bg-slate-50', text: 'text-slate-600', dot: 'bg-slate-400' },
 }
@@ -57,25 +56,21 @@ function ReviewInner({ claim }: { claim: Claim }) {
     claim.agentAnswers.some((a) => a.questionId === q.id),
   )
   const result = useMemo(() => computeReview(claim, answers), [claim, answers])
-  const answered = Object.values(answers).filter((a) => a.decision).length
+  const answered = Object.values(answers).filter((a) => a.value != null).length
   const allAnswered = answered === questions.length
   const band = scoreBand(result.qualityScore)
 
-  function setDecision(qid: string, decision: 'agree' | 'disagree') {
+  function setValue(qid: string, value: AnswerValue) {
     setAnswers((prev) => {
       const existing = prev[qid]
-      if (existing?.decision === decision) {
-        const { [qid]: _, ...rest } = prev
-        return rest
+      if (existing?.value === value) {
+        return { ...prev, [qid]: { ...existing, questionId: qid, value: null } }
       }
-      return { ...prev, [qid]: { questionId: qid, decision, correctedValue: existing?.correctedValue, note: existing?.note } }
+      return { ...prev, [qid]: { questionId: qid, value, note: existing?.note } }
     })
   }
-  function setCorrected(qid: string, value: AnswerValue) {
-    setAnswers((prev) => ({ ...prev, [qid]: { ...prev[qid], questionId: qid, decision: 'disagree', correctedValue: value } }))
-  }
   function setNote(qid: string, note: string) {
-    setAnswers((prev) => ({ ...prev, [qid]: { ...prev[qid], questionId: qid, decision: 'disagree', note } }))
+    setAnswers((prev) => ({ ...prev, [qid]: { questionId: qid, value: prev[qid]?.value ?? null, note } }))
   }
 
   function handleSubmit() {
@@ -83,7 +78,7 @@ function ReviewInner({ claim }: { claim: Claim }) {
       claimId: claim.id,
       reviewer,
       completedAt: new Date().toISOString().slice(0, 10),
-      reviewerAnswers: questions.map((q) => answers[q.id] || { questionId: q.id, decision: 'agree' }),
+      reviewerAnswers: questions.map((q) => answers[q.id] || { questionId: q.id, value: null }),
       qualityScore: result.qualityScore,
       agentScore: result.agentScore,
       calibration: result.calibration,
@@ -259,65 +254,44 @@ function ReviewInner({ claim }: { claim: Claim }) {
                             )}
                           </div>
 
-                          {/* reviewer controls */}
-                          <div className="mt-3 flex items-center gap-2">
-                            <button
-                              onClick={() => setDecision(q.id, 'agree')}
-                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-                                rev?.decision === 'agree'
-                                  ? 'bg-emerald-600 border-emerald-600 text-white'
-                                  : 'border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
-                              }`}
-                            >
-                              <Check size={15} /> Agree
-                            </button>
-                            <button
-                              onClick={() => setDecision(q.id, 'disagree')}
-                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-                                rev?.decision === 'disagree'
-                                  ? 'bg-red-600 border-red-600 text-white'
-                                  : 'border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-700'
-                              }`}
-                            >
-                              <X size={15} /> Disagree
-                            </button>
-                            {rev?.decision === 'agree' && (
-                              <span className="text-xs text-emerald-600 font-medium ml-1">
-                                Validated · counts toward AI calibration
-                              </span>
-                            )}
-                          </div>
-
-                          {/* disagree expansion */}
-                          {rev?.decision === 'disagree' && (
-                            <div className="mt-3 rounded-xl border border-red-200 bg-red-50/50 p-3.5 animate-fadeup">
-                              <div className="text-xs font-semibold text-red-700 mb-2">
-                                Correct the answer — this becomes model training signal
-                              </div>
-                              <div className="flex gap-2 flex-wrap">
-                                {(['yes', 'partial', 'no', 'na'] as AnswerValue[]).map((v) => (
+                          {/* reviewer's independent answer */}
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-semibold text-slate-500">Your answer:</span>
+                              {(['yes', 'no', 'na'] as AnswerValue[]).map((v) => {
+                                const active = rev?.value === v
+                                const activeCls = v === 'yes' ? 'bg-emerald-600 border-emerald-600 text-white' : v === 'no' ? 'bg-red-600 border-red-600 text-white' : 'bg-slate-600 border-slate-600 text-white'
+                                return (
                                   <button
                                     key={v}
-                                    onClick={() => setCorrected(q.id, v)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                                      rev.correctedValue === v
-                                        ? 'bg-brand-600 border-brand-600 text-white'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:border-brand-300'
-                                    }`}
+                                    onClick={() => setValue(q.id, v)}
+                                    className={`px-3.5 py-2 rounded-lg text-sm font-semibold border transition-colors ${active ? activeCls : 'border-slate-200 text-slate-600 hover:border-brand-300'}`}
                                   >
                                     {ANSWER_LABEL[v]}
                                   </button>
+                                )
+                              })}
+                              {rev?.value != null &&
+                                (rev.value === agent.value ? (
+                                  <span className="flex items-center gap-1 text-xs text-emerald-600 font-semibold ml-1">
+                                    <Check size={13} /> Agrees with AI
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-xs text-accent-600 font-semibold ml-1">
+                                    <X size={13} /> Differs from AI · training signal
+                                  </span>
                                 ))}
-                              </div>
-                              <textarea
-                                value={rev.note || ''}
-                                onChange={(e) => setNote(q.id, e.target.value)}
-                                placeholder="Why do you disagree? (e.g., 'Subro referral was actually made on 4/14, see note')"
-                                className="mt-2.5 w-full text-sm rounded-lg border border-red-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
-                                rows={2}
-                              />
                             </div>
-                          )}
+
+                            {/* note — available on every question */}
+                            <textarea
+                              value={rev?.note || ''}
+                              onChange={(e) => setNote(q.id, e.target.value)}
+                              placeholder="Add a note (optional) — rationale, context, or evidence…"
+                              className="mt-2.5 w-full text-sm rounded-lg border border-brand-100 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
+                              rows={2}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -63,9 +63,11 @@ export default function Dashboard() {
         lineAgg[claim.line].count++
       }
       for (const a of r.reviewerAnswers) {
+        const agentVal = claim?.agentAnswers.find((x) => x.questionId === a.questionId)?.value
+        const agreed = a.value != null && a.value === agentVal
         qAgg[a.questionId] ??= { agree: 0, total: 0 }
         qAgg[a.questionId].total++
-        if (a.decision === 'agree') {
+        if (agreed) {
           qAgg[a.questionId].agree++
           totalAgree++
         } else {

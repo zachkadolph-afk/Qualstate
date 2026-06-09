@@ -17,12 +17,14 @@ export function scoreAnswers(claim: Claim, values: Record<string, AnswerValue>):
   return Math.round((earned / possible) * 100)
 }
 
-/** the value the reviewer effectively endorsed for a question */
+/** the reviewer's own answer stands alone; fall back to the agent if unanswered */
 export function effectiveValue(agent: AgentAnswer, reviewer?: ReviewerAnswer): AnswerValue {
-  if (reviewer?.decision === 'disagree' && reviewer.correctedValue) {
-    return reviewer.correctedValue
-  }
-  return agent.value
+  return reviewer?.value ?? agent.value
+}
+
+/** the reviewer agrees when their independent answer matches the agent's */
+export function reviewerAgreed(agentValue: AnswerValue, reviewer?: ReviewerAnswer): boolean {
+  return reviewer?.value != null && reviewer.value === agentValue
 }
 
 export interface ReviewResult {
@@ -48,12 +50,10 @@ export function computeReview(
     const r = reviewerAnswers[a.questionId]
     agentValues[a.questionId] = a.value
     finalValues[a.questionId] = effectiveValue(a, r)
-    if (r?.decision === 'agree') {
-      agreements++
+    if (r?.value != null) {
       scored++
-    } else if (r?.decision === 'disagree') {
-      disagreements++
-      scored++
+      if (r.value === a.value) agreements++
+      else disagreements++
     }
   }
 

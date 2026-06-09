@@ -16,7 +16,7 @@ import { ReviewForm, FormStatus, ReviewType, REVIEW_TYPE_LABEL, FORM_LINES, FORM
 /* ------------------------------------------------------------------ */
 
 const CATEGORIES = ['Customer', 'Technical', 'Financial', 'Regulatory', 'Process']
-const ANSWER_VALUES: AnswerValue[] = ['yes', 'partial', 'no', 'na']
+const ANSWER_VALUES: AnswerValue[] = ['yes', 'no', 'na']
 
 const STATUS_STYLE: Record<FormStatus, string> = {
   Published: 'bg-emerald-50 text-emerald-700 border-emerald-200',

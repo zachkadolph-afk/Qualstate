@@ -60,13 +60,13 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('contact', 'yes', 0.97, 'FNOL and insured contact occurred the same day (4/2). First-contact letter is in the file.', ['Log 4/2 09:14 — "Spoke w/ insured, confirmed loss details, set expectations."']),
       aa('coverage', 'yes', 0.93, 'HO-3 coverage verified; sudden discharge is covered. Limits and $2,500 deductible documented.', ['Coverage screen capture attached', 'Deductible $2,500 noted on payment sheet']),
       aa('investigation', 'yes', 0.9, 'On-site inspection 4/4 with photos; cause confirmed as sudden/accidental. Source isolated.', ['18 inspection photos', 'Cause narrative dated 4/4']),
-      aa('reserving', 'partial', 0.71, 'Initial reserve of $25k was set 4/2 but not raised until 4/12 after the estimate, briefly under-reserved vs. exposure.', ['Reserve history: $25,000 → $42,000 on 4/12']),
+      aa('reserving', 'no', 0.71, 'Initial reserve of $25k was set 4/2 but not raised until 4/12 after the estimate, briefly under-reserved vs. exposure.', ['Reserve history: $25,000 → $42,000 on 4/12']),
       aa('damages', 'yes', 0.88, 'Itemized Xactimate estimate covers all four affected areas; line items reconcile to the scope photos.', ['Estimate PDF, 142 line items']),
       aa('liability', 'yes', 0.86, 'Causation analysis correctly distinguishes covered sudden discharge from excluded long-term seepage.', ['No staining/rot consistent with chronic leak per inspector']),
       aa('recovery', 'no', 0.82, 'A 6-year-old braided supply line failed; subrogation/product-defect referral was warranted but not made.', ['Failed part retained but no subro referral in file']),
       aa('payment', 'yes', 0.91, 'ACV calculated correctly, deductible applied, recoverable depreciation appropriately held back.', ['Payment worksheet: ACV $34,320 net of deductible']),
       aa('compliance', 'yes', 0.9, 'Acknowledgement and status communications meet TX timelines; no fair-practice gaps identified.', ['Status letters 4/2, 4/18']),
-      aa('documentation', 'partial', 0.68, 'Notes are generally clear but the rationale for not pursuing subrogation is absent.', ['No close note addressing recovery decision']),
+      aa('documentation', 'no', 0.68, 'Notes are generally clear but the rationale for not pursuing subrogation is absent.', ['No close note addressing recovery decision']),
     ],
   },
   {
@@ -115,7 +115,7 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('damages', 'yes', 0.9, 'Appraisal supports repair at $9,200; below total-loss threshold; estimate reconciles.', ['Appraisal worksheet']),
       aa('liability', 'yes', 0.96, 'Liability correctly assessed at 100% adverse per police report and physical evidence.', ['Police report cites adverse for red-light violation']),
       aa('recovery', 'yes', 0.93, 'Subrogation opened promptly against the at-fault carrier; full recovery obtained.', ['Subro demand 4/2; recovery 4/22']),
-      aa('payment', 'partial', 0.64, 'Repair and rental paid correctly, but rental ran 12 days when repair completed in 8 — 4 excess rental days paid.', ['Rental invoices show 12 days; repair order completed day 8']),
+      aa('payment', 'no', 0.64, 'Repair and rental paid correctly, but rental ran 12 days when repair completed in 8 — 4 excess rental days paid.', ['Rental invoices show 12 days; repair order completed day 8']),
       aa('compliance', 'yes', 0.89, 'CA fair-claims timelines met; subrogation handled within statute.', ['Acknowledgement 3/18']),
       aa('documentation', 'yes', 0.87, 'File is well documented with a clear liability and recovery narrative.', ['Closing summary present']),
     ],
@@ -162,13 +162,13 @@ export const REVIEW_CLAIMS: Claim[] = [
     agentAnswers: [
       aa('contact', 'yes', 0.84, 'Insured contacted 2/12, within standard after the delayed 2/11 report; claimant counsel acknowledged.', ['Contact log 2/12']),
       aa('coverage', 'yes', 0.9, 'Personal liability coverage confirmed; limits and exclusions reviewed.', ['Coverage analysis memo']),
-      aa('investigation', 'partial', 0.6, 'Liability facts rely heavily on the insured account; no independent witness statements or scene-condition evidence developed.', ['Only insured statement in file; no witness canvass noted']),
-      aa('reserving', 'partial', 0.66, 'Initial $30k reserve lagged the known surgical exposure; not raised to $65k until 4/25, ~2 months after surgery was known.', ['Reserve history shows late increase']),
+      aa('investigation', 'no', 0.6, 'Liability facts rely heavily on the insured account; no independent witness statements or scene-condition evidence developed.', ['Only insured statement in file; no witness canvass noted']),
+      aa('reserving', 'no', 0.66, 'Initial $30k reserve lagged the known surgical exposure; not raised to $65k until 4/25, ~2 months after surgery was known.', ['Reserve history shows late increase']),
       aa('damages', 'yes', 0.83, 'Medical specials, wage loss, and general damages evaluated with a documented range supporting the settlement.', ['Damages eval memo with range $40k-$55k']),
       aa('liability', 'yes', 0.79, 'Comparative negligence assessment (~70/30) is reasoned and consistent with FL premises law.', ['Liability evaluation note']),
       aa('recovery', 'na', 0.7, 'No contribution or subrogation targets present; single-tortfeasor premises claim.', ['No third party identified']),
       aa('payment', 'yes', 0.88, 'Settlement negotiated within the documented authority range with a full executed release.', ['Settlement check + release']),
-      aa('compliance', 'partial', 0.58, 'MSP reporting triggered but the file does not clearly evidence Section 111 reporting completion.', ['No Section 111 confirmation in file']),
+      aa('compliance', 'no', 0.58, 'MSP reporting triggered but the file does not clearly evidence Section 111 reporting completion.', ['No Section 111 confirmation in file']),
       aa('documentation', 'yes', 0.81, 'Evaluation and resolution rationale are documented in the closing memo.', ['Closing evaluation memo']),
     ],
   },
@@ -214,13 +214,13 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('contact', 'yes', 0.92, 'Insured contacted 3/30 within standard; inspection scheduled.', ['Contact note 3/30']),
       aa('coverage', 'yes', 0.88, 'HO-3 coverage and wind/hail peril confirmed; exclusions reviewed.', ['Coverage screen']),
       aa('investigation', 'no', 0.74, 'Single inspection with a contested cosmetic finding; no reinspection or engineer referral despite a material dispute and 17-year roof.', ['One inspection report; no engineer referral']),
-      aa('reserving', 'partial', 0.62, 'A nominal reserve was held but not meaningfully evaluated given the contested exposure.', ['Reserve $18k static']),
+      aa('reserving', 'no', 0.62, 'A nominal reserve was held but not meaningfully evaluated given the contested exposure.', ['Reserve $18k static']),
       aa('damages', 'no', 0.69, 'Damage assessment is contested and unsupported by test-square documentation; contractor alleges ~40 hits/square.', ['No test-square photos in carrier report']),
-      aa('liability', 'partial', 0.57, 'Causation (storm vs. age) was asserted but not clearly substantiated to support the wear-and-tear exclusion.', ['Denial cites exclusion without storm-opening analysis']),
+      aa('liability', 'no', 0.57, 'Causation (storm vs. age) was asserted but not clearly substantiated to support the wear-and-tear exclusion.', ['Denial cites exclusion without storm-opening analysis']),
       aa('recovery', 'na', 0.8, 'No subrogation/salvage applicable to a denied weather claim.', ['N/A']),
       aa('payment', 'na', 0.85, 'No payment issued (denied).', ['N/A']),
-      aa('compliance', 'partial', 0.6, 'Denial letter issued but does not fully articulate the basis or the insured\'s appeal rights per OK guidance.', ['Denial letter lacks specificity']),
-      aa('documentation', 'partial', 0.61, 'File documents the inspection but lacks rationale addressing the contractor rebuttal.', ['No note addressing rebuttal']),
+      aa('compliance', 'no', 0.6, 'Denial letter issued but does not fully articulate the basis or the insured\'s appeal rights per OK guidance.', ['Denial letter lacks specificity']),
+      aa('documentation', 'no', 0.61, 'File documents the inspection but lacks rationale addressing the contractor rebuttal.', ['No note addressing rebuttal']),
     ],
   },
   {
@@ -265,12 +265,12 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('coverage', 'yes', 0.91, 'Comprehensive coverage and theft peril confirmed; no key-in-vehicle exclusion.', ['Coverage + recorded statement on keys']),
       aa('investigation', 'yes', 0.86, 'Police report obtained, SIU screen completed and cleared, recovery condition documented.', ['Police report', 'SIU referral cleared']),
       aa('reserving', 'yes', 0.84, 'Reserve set near anticipated ACV promptly after the total-loss determination.', ['Reserve $31k 4/21']),
-      aa('damages', 'partial', 0.63, 'ACV valuation is reasonable but comparable-vehicle condition/mileage adjustments are lightly documented.', ['Valuation report; thin adjustment notes']),
+      aa('damages', 'no', 0.63, 'ACV valuation is reasonable but comparable-vehicle condition/mileage adjustments are lightly documented.', ['Valuation report; thin adjustment notes']),
       aa('liability', 'na', 0.8, 'First-party comprehensive theft; no liability determination required.', ['N/A']),
-      aa('recovery', 'partial', 0.59, 'Recovered-vehicle salvage was processed, but no documentation of pursuing the parking facility or theft-ring restitution.', ['Salvage assigned; no other recovery analysis']),
+      aa('recovery', 'no', 0.59, 'Recovered-vehicle salvage was processed, but no documentation of pursuing the parking facility or theft-ring restitution.', ['Salvage assigned; no other recovery analysis']),
       aa('payment', 'yes', 0.9, 'ACV less deductible paid jointly to insured and lienholder; calculation correct.', ['Payment worksheet; joint check']),
       aa('compliance', 'yes', 0.87, 'GA total-loss notice and title handling completed within timelines.', ['Total loss notice 4/30']),
-      aa('documentation', 'partial', 0.64, 'File is mostly complete but does not address the rental-gap or the valuation adjustments.', ['No note on rental limit gap']),
+      aa('documentation', 'no', 0.64, 'File is mostly complete but does not address the rental-gap or the valuation adjustments.', ['No note on rental limit gap']),
     ],
   },
   {
@@ -312,7 +312,7 @@ export const REVIEW_CLAIMS: Claim[] = [
     ],
     agentAnswers: [
       aa('contact', 'yes', 0.94, 'Both claimant and insured contacted promptly (1/24) and documented.', ['Contact log 1/24']),
-      aa('coverage', 'partial', 0.62, 'Personal liability confirmed, but no evidence the animal-liability sublimit or prior-incident flag was checked.', ['Coverage memo lacks sublimit note']),
+      aa('coverage', 'no', 0.62, 'Personal liability confirmed, but no evidence the animal-liability sublimit or prior-incident flag was checked.', ['Coverage memo lacks sublimit note']),
       aa('investigation', 'yes', 0.85, 'Incident facts, medical records, and prior-bite history were gathered and documented.', ['Records request + responses']),
       aa('reserving', 'yes', 0.86, 'Reserve set at $22k consistent with the injury exposure.', ['Reserve note 2/1']),
       aa('damages', 'yes', 0.88, 'Medical specials and general damages evaluated; settlement within the documented range.', ['Damages eval memo']),
@@ -370,9 +370,9 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('damages', 'yes', 0.84, 'Structure scope is itemized in Xactimate and reconciles to scope photos across the affected rooms.', ['Estimate PDF, 188 line items']),
       aa('liability', 'yes', 0.87, 'Causation correctly identifies a covered accidental fire; no excluded cause implicated.', ['C&O narrative']),
       aa('recovery', 'na', 0.78, 'No subrogation target — owner-caused accidental fire with no third-party product or service failure identified.', ['N/A']),
-      aa('payment', 'partial', 0.61, 'Structure and contents paid correctly, but the ALE was approved verbally and paid without a written ALE worksheet or complete supporting receipts.', ['ALE paid $4,200; only partial receipts in file']),
+      aa('payment', 'no', 0.61, 'Structure and contents paid correctly, but the ALE was approved verbally and paid without a written ALE worksheet or complete supporting receipts.', ['ALE paid $4,200; only partial receipts in file']),
       aa('compliance', 'yes', 0.88, 'AZ acknowledgement and status communications met required timelines; large-loss notices issued.', ['Status letters 3/5, 3/20']),
-      aa('documentation', 'partial', 0.63, 'File is largely complete but the smoke-deodorization scope was not separately validated against the contractor invoice.', ['No reconciliation note for deodorization line']),
+      aa('documentation', 'no', 0.63, 'File is largely complete but the smoke-deodorization scope was not separately validated against the contractor invoice.', ['No reconciliation note for deodorization line']),
     ],
   },
   {
@@ -418,7 +418,7 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('contact', 'yes', 0.93, 'Insured statement taken at FNOL (2/26); claimant contacted next day and documented.', ['Contact log 2/26, 2/27']),
       aa('coverage', 'yes', 0.9, 'Liability coverage and BI limits verified; no coverage defenses applicable.', ['Dec page; limits adequate']),
       aa('investigation', 'yes', 0.86, 'Clear rear-end facts; insured admission, scene details, and PD photos gathered.', ['Insured admission', 'PD photos x10']),
-      aa('reserving', 'partial', 0.6, 'BI reserve was set low at $15k and not raised to reflect developing treatment until specials arrived in late April.', ['Reserve history: $15k → $54k on 4/24']),
+      aa('reserving', 'no', 0.6, 'BI reserve was set low at $15k and not raised to reflect developing treatment until specials arrived in late April.', ['Reserve history: $15k → $54k on 4/24']),
       aa('damages', 'yes', 0.82, 'Property damage appraised and repaired; BI specials and wage loss itemized in the demand evaluation.', ['PD appraisal', 'BI specials worksheet']),
       aa('liability', 'yes', 0.95, 'Liability correctly assessed at 100% insured for the rear-end collision.', ['Insured admission; liability note']),
       aa('recovery', 'na', 0.8, 'No subrogation — our insured is the at-fault party.', ['N/A']),
@@ -472,12 +472,12 @@ export const REVIEW_CLAIMS: Claim[] = [
       aa('coverage', 'yes', 0.86, 'Products-liability coverage confirmed under the BOP; limits and exclusions reviewed.', ['Coverage analysis memo']),
       aa('investigation', 'no', 0.72, 'The physical lid and matching production lot were not secured despite a preservation demand, risking spoliation and weakening causation analysis.', ['No evidence-retention log; product not in custody']),
       aa('reserving', 'yes', 0.83, 'A substantial $120k indemnity/expense reserve was opened consistent with the alleged burn severity.', ['Reserve note 1/24']),
-      aa('damages', 'partial', 0.58, 'Damages remain developing; only initial medical records are in file and no evaluation range is documented yet.', ['Partial records; no damages range memo']),
-      aa('liability', 'partial', 0.55, 'Liability/defect theory is plausible but unsupported by product testing or a defect opinion.', ['No engineering/defect analysis']),
+      aa('damages', 'no', 0.58, 'Damages remain developing; only initial medical records are in file and no evaluation range is documented yet.', ['Partial records; no damages range memo']),
+      aa('liability', 'no', 0.55, 'Liability/defect theory is plausible but unsupported by product testing or a defect opinion.', ['No engineering/defect analysis']),
       aa('recovery', 'no', 0.64, 'A supplier tender was sent but there is no executed indemnity acceptance or additional-insured verification, leaving recovery unsecured.', ['Tender letter only; no AI/indemnity confirmation']),
       aa('payment', 'na', 0.8, 'No settlement or payment has been made; matter is open.', ['N/A']),
       aa('compliance', 'yes', 0.82, 'CA acknowledgement and counsel communications meet fair-claims timelines to date.', ['Acknowledgement 1/22']),
-      aa('documentation', 'partial', 0.6, 'File documents the intake and tender but lacks an action plan addressing evidence preservation and the recovery path.', ['No plan note on spoliation/recovery']),
+      aa('documentation', 'no', 0.6, 'File documents the intake and tender but lacks an action plan addressing evidence preservation and the recovery path.', ['No plan note on spoliation/recovery']),
     ],
   },
   {
@@ -520,15 +520,15 @@ export const REVIEW_CLAIMS: Claim[] = [
     ],
     agentAnswers: [
       aa('contact', 'yes', 0.94, 'FNOL and insured contact same day (1/18); mitigation guidance provided.', ['Contact log 1/18']),
-      aa('coverage', 'partial', 0.59, 'Coverage was confirmed, but the freeze-exclusion analysis is brief and does not fully document that heat was maintained and the home occupied.', ['Coverage note lacks heat/occupancy detail']),
+      aa('coverage', 'no', 0.59, 'Coverage was confirmed, but the freeze-exclusion analysis is brief and does not fully document that heat was maintained and the home occupied.', ['Coverage note lacks heat/occupancy detail']),
       aa('investigation', 'yes', 0.88, 'Inspection confirmed the freeze/burst cause with photos; source isolated to the exterior-wall pipe.', ['Inspection photos x14', 'Cause note 1/22']),
-      aa('reserving', 'partial', 0.62, 'A single reserve was set at intake and never revisited despite a contents component that emerged during drying.', ['Reserve $36k static; contents added later']),
+      aa('reserving', 'no', 0.62, 'A single reserve was set at intake and never revisited despite a contents component that emerged during drying.', ['Reserve $36k static; contents added later']),
       aa('damages', 'yes', 0.85, 'Itemized Xactimate estimate covers both affected areas and reconciles to the moisture mapping.', ['Estimate PDF; moisture map']),
       aa('liability', 'yes', 0.83, 'Covered sudden freeze correctly distinguished from any excluded maintenance/vacancy scenario.', ['Cause narrative']),
       aa('recovery', 'na', 0.79, 'No subrogation/salvage target for a weather-driven freeze loss.', ['N/A']),
       aa('payment', 'yes', 0.9, 'ACV calculated correctly with the $2,500 deductible applied and recoverable depreciation held.', ['Payment worksheet']),
       aa('compliance', 'yes', 0.89, 'TX acknowledgement and status timelines met.', ['Status letters 1/18, 2/2']),
-      aa('documentation', 'partial', 0.64, 'File documents the loss but the coverage rationale for the freeze exclusion is thin and would benefit from explicit occupancy/heat findings.', ['No explicit occupancy/heat note']),
+      aa('documentation', 'no', 0.64, 'File documents the loss but the coverage rationale for the freeze exclusion is thin and would benefit from explicit occupancy/heat findings.', ['No explicit occupancy/heat note']),
     ],
   },
 ]
@@ -565,7 +565,7 @@ function makeValues(line: Line, baseQuality: number): Record<string, AnswerValue
     const r = rnd()
     // higher baseQuality => more "yes"
     if (r < baseQuality) out[q.id] = 'yes'
-    else if (r < baseQuality + 0.18) out[q.id] = 'partial'
+    else if (r < baseQuality + 0.18) out[q.id] = 'no'
     else out[q.id] = 'no'
   }
   return out
@@ -581,23 +581,22 @@ export const HISTORY_CLAIMS: Record<string, Claim> = {}
     const baseQuality = 0.55 + rnd() * 0.38
     const agentValues = makeValues(line, baseQuality)
 
-    // reviewer agrees on most; disagrees on a per-question reliability profile
-    const reviewerAnswers = QUESTIONNAIRES[line].map((q) => {
+    // reviewer answers independently; differs on a per-question reliability profile
+    const reviewerAnswers: ReviewerAnswer[] = QUESTIONNAIRES[line].map((q) => {
       // some questions are intrinsically harder for the AI -> more disagreement
       const hardness = ['investigation', 'reserving', 'liability', 'compliance', 'recovery'].includes(q.id) ? 0.22 : 0.08
-      const disagree = rnd() < hardness
-      if (disagree) {
-        const corrected: AnswerValue = agentValues[q.id] === 'yes' ? (rnd() < 0.5 ? 'partial' : 'no') : 'yes'
-        return { questionId: q.id, decision: 'disagree' as const, correctedValue: corrected, note: 'Reviewer adjusted per file evidence.' }
-      }
-      return { questionId: q.id, decision: 'agree' as const }
+      const differs = rnd() < hardness
+      const agentVal = agentValues[q.id]
+      // the reviewer's own answer; when it differs, it flips to the opposite of the agent
+      const value: AnswerValue = differs ? (agentVal === 'yes' ? 'no' : 'yes') : agentVal
+      return { questionId: q.id, value, note: differs ? 'Reviewer adjusted per file evidence.' : undefined }
     })
 
     const finalValues: Record<string, AnswerValue> = { ...agentValues }
     let agree = 0
     for (const r of reviewerAnswers) {
-      if (r.decision === 'disagree' && r.correctedValue) finalValues[r.questionId] = r.correctedValue
-      else agree++
+      if (r.value != null) finalValues[r.questionId] = r.value
+      if (r.value === agentValues[r.questionId]) agree++
     }
 
     const date = new Date(2026, 5, 9)
@@ -681,35 +680,35 @@ const NAMED_RECENT: NamedReviewSeed[] = [
     id: 'H-AU-2207', claimNumber: 'AU-2024-2207', line: 'Auto', perilType: 'Total Loss — Collision',
     insured: 'Renata Vasquez', adjuster: 'M. Russo', state: 'GA', severity: 'High',
     reserveAmount: 27500, paidAmount: 24100, completedAt: '2026-06-02', reviewer: 'K. Park',
-    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'yes', damages: 'partial', liability: 'yes', recovery: 'partial', payment: 'yes', compliance: 'yes', documentation: 'yes' },
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'yes', damages: 'no', liability: 'yes', recovery: 'no', payment: 'yes', compliance: 'yes', documentation: 'yes' },
     corrections: { recovery: 'no' },
   },
   {
     id: 'H-PR-2208', claimNumber: 'PR-2024-2208', line: 'Property', perilType: 'Water Damage — Supply Line',
     insured: 'The Hollis Family', adjuster: 'D. Okafor', state: 'TX', severity: 'Moderate',
     reserveAmount: 31000, paidAmount: 27450, completedAt: '2026-06-03', reviewer: 'A. Reyes',
-    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'partial', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'partial' },
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'no', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'no' },
     corrections: { reserving: 'no' },
   },
   {
     id: 'H-CA-2209', claimNumber: 'CA-2024-2209', line: 'Casualty', perilType: 'Premises — Slip & Fall',
     insured: 'Westgate Retail LLC', adjuster: 'S. Whitaker', state: 'FL', severity: 'High',
     reserveAmount: 72000, paidAmount: 51500, completedAt: '2026-06-05', reviewer: 'T. Coleman',
-    agent: { contact: 'yes', coverage: 'yes', investigation: 'partial', reserving: 'partial', damages: 'yes', liability: 'partial', recovery: 'na', payment: 'yes', compliance: 'partial', documentation: 'partial' },
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'no', reserving: 'no', damages: 'yes', liability: 'no', recovery: 'na', payment: 'yes', compliance: 'no', documentation: 'no' },
     corrections: { investigation: 'no', compliance: 'no' },
   },
   {
     id: 'H-PR-2210', claimNumber: 'PR-2024-2210', line: 'Property', perilType: 'Wind/Hail — Roof',
     insured: 'Carl & Maria Denton', adjuster: 'J. Tran', state: 'OK', severity: 'Moderate',
     reserveAmount: 19500, paidAmount: 0, completedAt: '2026-06-06', reviewer: 'M. Devi',
-    agent: { contact: 'yes', coverage: 'yes', investigation: 'no', reserving: 'partial', damages: 'no', liability: 'partial', recovery: 'na', payment: 'na', compliance: 'partial', documentation: 'partial' },
-    corrections: { damages: 'partial', documentation: 'no' },
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'no', reserving: 'no', damages: 'no', liability: 'no', recovery: 'na', payment: 'na', compliance: 'no', documentation: 'no' },
+    corrections: { damages: 'no', documentation: 'no' },
   },
   {
     id: 'H-CA-2211', claimNumber: 'CA-2024-2211', line: 'Casualty', perilType: 'Dog Bite — Bodily Injury',
     insured: 'Yusuf Rahman', adjuster: 'B. Feldman', state: 'IL', severity: 'Moderate',
     reserveAmount: 24000, paidAmount: 18250, completedAt: '2026-06-08', reviewer: 'J. Salazar',
-    agent: { contact: 'yes', coverage: 'partial', investigation: 'yes', reserving: 'yes', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'yes' },
+    agent: { contact: 'yes', coverage: 'no', investigation: 'yes', reserving: 'yes', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'yes' },
     corrections: {},
   },
 ]
@@ -742,9 +741,10 @@ for (const s of NAMED_RECENT) {
   const reviewerRec: Record<string, ReviewerAnswer> = {}
   const reviewerAnswers: ReviewerAnswer[] = questions.map((q) => {
     const corrected = s.corrections[q.id]
+    // reviewer's own answer: their correction where they differ, else the agent's value
     const ra: ReviewerAnswer = corrected
-      ? { questionId: q.id, decision: 'disagree', correctedValue: corrected, note: 'Reviewer adjusted per file evidence.' }
-      : { questionId: q.id, decision: 'agree' }
+      ? { questionId: q.id, value: corrected, note: 'Reviewer adjusted per file evidence.' }
+      : { questionId: q.id, value: s.agent[q.id] }
     reviewerRec[q.id] = ra
     return ra
   })

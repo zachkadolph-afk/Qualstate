@@ -48,16 +48,17 @@ export default function Calibration() {
     for (const r of completedReviews) {
       const claim = getClaim(r.claimId)
       for (const a of r.reviewerAnswers) {
+        const agentAnswer = claim?.agentAnswers.find((x) => x.questionId === a.questionId)
         qAgg[a.questionId] ??= { agree: 0, total: 0 }
         qAgg[a.questionId].total++
         totalAnswers++
-        const agreed = a.decision === 'agree'
+        const agreed = a.value != null && a.value === agentAnswer?.value
         if (agreed) {
           qAgg[a.questionId].agree++
           totalAgree++
         }
         // join to the AI's self-reported confidence for this question
-        const conf = claim?.agentAnswers.find((x) => x.questionId === a.questionId)?.confidence
+        const conf = agentAnswer?.confidence
         if (typeof conf === 'number') {
           const key = conf < 0.7 ? '50–70%' : conf < 0.8 ? '70–80%' : conf < 0.9 ? '80–90%' : '90–100%'
           confBuckets[key].total++

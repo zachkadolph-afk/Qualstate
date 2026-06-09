@@ -1,6 +1,6 @@
 export type Line = 'Property' | 'Auto' | 'Casualty'
 
-export type AnswerValue = 'yes' | 'partial' | 'no' | 'na'
+export type AnswerValue = 'yes' | 'no' | 'na'
 
 export interface Question {
   id: string
@@ -25,13 +25,11 @@ export interface AgentAnswer {
   evidence: string[]
 }
 
-export type ReviewDecision = 'agree' | 'disagree' | null
-
 export interface ReviewerAnswer {
   questionId: string
-  decision: ReviewDecision
-  /** when disagreeing, the corrected value */
-  correctedValue?: AnswerValue
+  /** the reviewer's own independent answer (stands alone) */
+  value: AnswerValue | null
+  /** optional note on any question */
   note?: string
 }
 

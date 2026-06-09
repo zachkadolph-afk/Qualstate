@@ -25,50 +25,51 @@ for (const c of REVIEW_CLAIMS) {
   check(`${c.claimNumber} has an agent answer for all ${qids.length} questions`, covers)
 }
 
-console.log('\n=== Reviewer AGREES with every finding ===')
+console.log('\n=== Reviewer answers identically to the AI (full agreement) ===')
 {
   const claim = REVIEW_CLAIMS[0]
   const answers: Record<string, ReviewerAnswer> = {}
-  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, decision: 'agree' }
+  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, value: a.value }
   const r = computeReview(claim, answers)
-  check('all-agree calibration is 100%', r.calibration === 100, `${r.calibration}%`)
-  check('quality score equals AI-only score when fully agreed', r.qualityScore === r.agentScore, `${r.qualityScore} vs ${r.agentScore}`)
+  check('matching answers => 100% calibration', r.calibration === 100, `${r.calibration}%`)
+  check('quality score equals AI-only score when answers match', r.qualityScore === r.agentScore, `${r.qualityScore} vs ${r.agentScore}`)
   check('agreement count equals question count', r.agreements === claim.agentAnswers.length)
   check('zero disagreements', r.disagreements === 0)
 }
 
-console.log('\n=== Reviewer DISAGREES and corrects a finding ===')
+console.log('\n=== Reviewer answers a "yes" finding as "no" (differs, stands alone) ===')
 {
-  // Use the property fire claim; flip a "yes" finding to "no" and confirm the
-  // validated score drops below the AI-only score and calibration falls.
   const claim = REVIEW_CLAIMS.find((c) => c.id === 'CLM-PR-6203')!
   const target = claim.agentAnswers.find((a) => a.value === 'yes')!
   const answers: Record<string, ReviewerAnswer> = {}
-  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, decision: 'agree' }
-  answers[target.questionId] = {
-    questionId: target.questionId,
-    decision: 'disagree',
-    correctedValue: 'no',
-    note: 'Reviewer override for test',
-  }
+  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, value: a.value }
+  answers[target.questionId] = { questionId: target.questionId, value: 'no', note: 'Reviewer note for test' }
   const r = computeReview(claim, answers)
-  check('effectiveValue reflects the correction', effectiveValue(target, answers[target.questionId]) === 'no')
-  check('one disagreement recorded', r.disagreements === 1, `${r.disagreements}`)
-  check('validated score is below AI-only score after downgrading a finding', r.qualityScore < r.agentScore, `${r.qualityScore} < ${r.agentScore}`)
+  check("reviewer's answer stands alone (effectiveValue is theirs)", effectiveValue(target, answers[target.questionId]) === 'no')
+  check('one disagreement auto-detected', r.disagreements === 1, `${r.disagreements}`)
+  check('validated score is below AI-only score after a "no"', r.qualityScore < r.agentScore, `${r.qualityScore} < ${r.agentScore}`)
   const expectedCal = Math.round(((claim.agentAnswers.length - 1) / claim.agentAnswers.length) * 100)
-  check('calibration drops by exactly one corrected answer', r.calibration === expectedCal, `${r.calibration}% expected ${expectedCal}%`)
+  check('calibration drops by exactly one differing answer', r.calibration === expectedCal, `${r.calibration}% expected ${expectedCal}%`)
 }
 
-console.log('\n=== Disagreeing UP (no -> yes) raises the validated score ===')
+console.log('\n=== Reviewer answers a "no" finding as "yes" raises the validated score ===')
 {
   const claim = REVIEW_CLAIMS.find((c) => c.agentAnswers.some((a) => a.value === 'no'))!
   const target = claim.agentAnswers.find((a) => a.value === 'no')!
   const answers: Record<string, ReviewerAnswer> = {}
-  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, decision: 'agree' }
+  for (const a of claim.agentAnswers) answers[a.questionId] = { questionId: a.questionId, value: a.value }
   const agentScore = computeReview(claim, answers).agentScore
-  answers[target.questionId] = { questionId: target.questionId, decision: 'disagree', correctedValue: 'yes' }
+  answers[target.questionId] = { questionId: target.questionId, value: 'yes' }
   const r = computeReview(claim, answers)
-  check(`${claim.claimNumber}: upgrading a "Not Met" to "Met" raises validated score`, r.qualityScore > agentScore, `${r.qualityScore} > ${agentScore}`)
+  check(`${claim.claimNumber}: answering "No" as "Yes" raises validated score`, r.qualityScore > agentScore, `${r.qualityScore} > ${agentScore}`)
+}
+
+console.log('\n=== Notes are allowed on agreeing answers (not just differences) ===')
+{
+  const claim = REVIEW_CLAIMS[0]
+  const a0 = claim.agentAnswers[0]
+  const ra: ReviewerAnswer = { questionId: a0.questionId, value: a0.value, note: 'Agree, but noting context' }
+  check('an agreeing answer can carry a note', ra.value === a0.value && !!ra.note)
 }
 
 console.log('\n=== N/A answers are excluded from the denominator ===')
@@ -76,12 +77,11 @@ console.log('\n=== N/A answers are excluded from the denominator ===')
   const claim = REVIEW_CLAIMS.find((c) => c.agentAnswers.some((a) => a.value === 'na'))!
   const allYes: Record<string, AnswerValue> = {}
   for (const a of claim.agentAnswers) allYes[a.questionId] = 'yes'
-  // a pure-yes file (minus the na exclusion) should score 100
   const withNa = { ...allYes }
   const naId = claim.agentAnswers.find((a) => a.value === 'na')!.questionId
   withNa[naId] = 'na'
   check('all-yes (with an N/A excluded) scores 100', scoreAnswers(claim, withNa) === 100, `${scoreAnswers(claim, withNa)}`)
-  check('ANSWER_POINTS sanity (yes=1, partial=0.5, no=0)', ANSWER_POINTS.yes === 1 && ANSWER_POINTS.partial === 0.5 && ANSWER_POINTS.no === 0)
+  check('ANSWER_POINTS sanity (yes=1, no=0)', ANSWER_POINTS.yes === 1 && ANSWER_POINTS.no === 0 && ANSWER_POINTS.partial === undefined)
 }
 
 console.log('\n=== Named recent completed reviews feed the dashboard ===')
