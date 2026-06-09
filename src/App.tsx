@@ -15,6 +15,7 @@ import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
 import Rules from './pages/Rules'
 import UserManagement from './pages/UserManagement'
 import Sampling from './pages/Sampling'
+import SystemManagement from './pages/SystemManagement'
 import Sidebar from './components/Sidebar'
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/scorecards" element={<Scorecards />} />
           <Route path="/calibration" element={<Calibration />} />
           <Route path="/coaching" element={<Coaching />} />
+          <Route path="/system" element={admin ? <SystemManagement /> : <Navigate to="/dashboard" replace />} />
           <Route path="/audit" element={admin ? <Audit /> : <Navigate to="/dashboard" replace />} />
           <Route path="/questionnaire" element={admin ? <QuestionnaireBuilder /> : <Navigate to="/dashboard" replace />} />
           <Route path="/rules" element={admin ? <Rules /> : <Navigate to="/dashboard" replace />} />
