@@ -73,4 +73,8 @@ export interface CompletedReview {
   qualityScore: number
   agentScore: number
   calibration: number
+  /** which form drove this review (coordinated system) */
+  formId?: string
+  /** Diagnostic (outcome-based) or Targeted (real-time) */
+  reviewType?: 'Diagnostic' | 'Targeted'
 }

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, Trophy, ListChecks, Users, Filter, Gauge } from 'lucide-react'
+import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, Trophy, ListChecks, Users, Filter, Gauge, RotateCcw } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 
@@ -15,7 +15,7 @@ const links = [
 ]
 
 export default function Sidebar() {
-  const { reviewClaims, reviewer } = useStore()
+  const { reviewClaims, currentUser, resetDemo } = useStore()
 
   return (
     <aside className="w-[248px] shrink-0 bg-brand-950 text-white flex flex-col sticky top-0 h-screen">
@@ -61,15 +61,21 @@ export default function Sidebar() {
         </div>
         <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-accent-500 grid place-items-center text-white font-bold text-sm">
-            {reviewer.replace(/[^A-Z]/g, '').slice(0, 2)}
+            {(currentUser?.name ?? '').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold truncate">{reviewer}</div>
+            <div className="text-sm font-semibold truncate">{currentUser?.name ?? 'Reviewer'}</div>
             <div className="text-[11px] text-brand-100/60 flex items-center gap-1">
-              <ShieldCheck size={11} /> Senior QA Reviewer
+              <ShieldCheck size={11} /> {currentUser?.role ?? 'Reviewer'}
             </div>
           </div>
         </div>
+        <button
+          onClick={resetDemo}
+          className="w-full flex items-center justify-center gap-1.5 text-[11px] font-semibold text-brand-100/50 hover:text-white py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+        >
+          <RotateCcw size={12} /> Reset demo data
+        </button>
       </div>
     </aside>
   )

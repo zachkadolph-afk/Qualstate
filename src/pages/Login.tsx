@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { ArrowRight, ShieldCheck, Sparkles, BarChart3 } from 'lucide-react'
 import Logo from '../components/Logo'
+import { useStore } from '../lib/store'
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
+  const { login } = useStore()
   const [email, setEmail] = useState('a.reyes@qualstate.ai')
   const [pw, setPw] = useState('demo')
 
@@ -60,6 +62,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
+            login(email)
             onLogin()
           }}
           className="w-full max-w-sm animate-fadeup"
