@@ -3,8 +3,19 @@
 /*  assignment, and User Management all share one source of truth.     */
 /* ------------------------------------------------------------------ */
 
-export type Role = 'Reviewer' | 'Lead Reviewer' | 'Manager' | 'Admin'
+export type Role = 'Reviewer' | 'Lead Reviewer' | 'Manager' | 'Technical Analyst' | 'System Manager'
 export type UserStatus = 'Active' | 'Invited' | 'Disabled'
+
+/**
+ * Configuration roles — the only roles that may access Forms management,
+ * User management, and Sampling/Assignment. Reviewers, Lead Reviewers, and
+ * Managers are intentionally excluded.
+ */
+export const CONFIG_ROLES: Role[] = ['Technical Analyst', 'System Manager']
+
+export function canConfigure(user?: { role: Role } | null): boolean {
+  return !!user && CONFIG_ROLES.includes(user.role)
+}
 
 export interface User {
   id: string
@@ -16,7 +27,7 @@ export interface User {
   reviews: number
 }
 
-export const ROLES: Role[] = ['Reviewer', 'Lead Reviewer', 'Manager', 'Admin']
+export const ROLES: Role[] = ['Reviewer', 'Lead Reviewer', 'Manager', 'Technical Analyst', 'System Manager']
 
 export function seedUsers(): User[] {
   let i = 0
@@ -36,7 +47,8 @@ export function seedUsers(): User[] {
     u('K. Park', 'k.park@qualstate.ai', 'Reviewer', 'Active', '2026-06-08', 87),
     u('J. Salazar', 'j.salazar@qualstate.ai', 'Reviewer', 'Active', '2026-06-07', 73),
     u('P. Okonkwo', 'p.okonkwo@qualstate.ai', 'Manager', 'Active', '2026-06-09', 0),
-    u('D. Whitfield', 'd.whitfield@qualstate.ai', 'Admin', 'Active', '2026-06-06', 0),
+    u('R. Okafor', 'r.okafor@qualstate.ai', 'Technical Analyst', 'Active', '2026-06-09', 0),
+    u('D. Whitfield', 'd.whitfield@qualstate.ai', 'System Manager', 'Active', '2026-06-06', 0),
     u('S. Brennan', 's.brennan@qualstate.ai', 'Reviewer', 'Invited', '—', 0),
     u('L. Nguyen', 'l.nguyen@qualstate.ai', 'Reviewer', 'Disabled', '2026-04-21', 54),
   ]

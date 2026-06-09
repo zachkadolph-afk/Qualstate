@@ -2,20 +2,23 @@ import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, ClipboardCheck, ShieldCheck, Sparkles, Workflow, Trophy, ListChecks, Users, Filter, Gauge, RotateCcw } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
+import { canConfigure } from '../data/users'
 
 const links = [
-  { to: '/dashboard', label: 'Quality Dashboard', icon: LayoutDashboard },
-  { to: '/queue', label: 'Review Queue', icon: ClipboardCheck },
-  { to: '/scorecards', label: 'Adjuster Scorecards', icon: Trophy },
-  { to: '/calibration', label: 'Model Reliability', icon: Gauge },
-  { to: '/questionnaire', label: 'Questionnaire Builder', icon: ListChecks },
-  { to: '/users', label: 'User Management', icon: Users },
-  { to: '/sampling', label: 'Sampling & Assignment', icon: Filter },
-  { to: '/how-it-works', label: 'Vision', icon: Workflow },
+  { to: '/dashboard', label: 'Quality Dashboard', icon: LayoutDashboard, config: false },
+  { to: '/queue', label: 'Review Queue', icon: ClipboardCheck, config: false },
+  { to: '/scorecards', label: 'Adjuster Scorecards', icon: Trophy, config: false },
+  { to: '/calibration', label: 'Model Reliability', icon: Gauge, config: false },
+  { to: '/questionnaire', label: 'Questionnaire Builder', icon: ListChecks, config: true },
+  { to: '/users', label: 'User Management', icon: Users, config: true },
+  { to: '/sampling', label: 'Sampling & Assignment', icon: Filter, config: true },
+  { to: '/how-it-works', label: 'Vision', icon: Workflow, config: false },
 ]
 
 export default function Sidebar() {
   const { reviewClaims, currentUser, resetDemo } = useStore()
+  const isAdmin = canConfigure(currentUser)
+  const visibleLinks = links.filter((l) => !l.config || isAdmin)
 
   return (
     <aside className="w-[248px] shrink-0 bg-brand-950 text-white flex flex-col sticky top-0 h-screen">
@@ -24,7 +27,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">
-        {links.map((l) => {
+        {visibleLinks.map((l) => {
           const Icon = l.icon
           return (
             <NavLink

@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import { useStore } from './lib/store'
+import { canConfigure } from './data/users'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Queue from './pages/Queue'
@@ -15,6 +17,8 @@ import Sidebar from './components/Sidebar'
 export default function App() {
   const [authed, setAuthed] = useState(false)
   const location = useLocation()
+  const { currentUser } = useStore()
+  const admin = canConfigure(currentUser)
 
   if (!authed) {
     return (
@@ -35,9 +39,9 @@ export default function App() {
           <Route path="/review/:id" element={<Review />} />
           <Route path="/scorecards" element={<Scorecards />} />
           <Route path="/calibration" element={<Calibration />} />
-          <Route path="/questionnaire" element={<QuestionnaireBuilder />} />
-          <Route path="/users" element={<UserManagement />} />
-          <Route path="/sampling" element={<Sampling />} />
+          <Route path="/questionnaire" element={admin ? <QuestionnaireBuilder /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/users" element={admin ? <UserManagement /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/sampling" element={admin ? <Sampling /> : <Navigate to="/dashboard" replace />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

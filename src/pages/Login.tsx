@@ -94,8 +94,35 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           >
             Enter dashboard <ArrowRight size={18} />
           </button>
+
+          {/* quick personas — demonstrate role-based access */}
+          <div className="mt-5">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Quick sign-in as</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Reviewer', email: 'a.reyes@qualstate.ai' },
+                { label: 'Manager', email: 'p.okonkwo@qualstate.ai' },
+                { label: 'Technical Analyst', email: 'r.okafor@qualstate.ai' },
+                { label: 'System Manager', email: 'd.whitfield@qualstate.ai' },
+              ].map((p) => (
+                <button
+                  key={p.email}
+                  type="button"
+                  onClick={() => {
+                    login(p.email)
+                    onLogin()
+                  }}
+                  className="text-left px-3 py-2 rounded-lg border border-brand-100 hover:border-brand-300 hover:bg-brand-50/50 transition-colors"
+                >
+                  <div className="text-xs font-semibold text-brand-950">{p.label}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{p.email}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <p className="text-center text-xs text-slate-400 mt-4">
-            Demo environment — any credentials continue.
+            Admin tools (Forms, Users, Sampling) require Technical Analyst or System Manager.
           </p>
         </form>
       </div>

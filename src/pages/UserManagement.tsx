@@ -13,7 +13,8 @@ const ROLE_STYLE: Record<Role, string> = {
   Reviewer: 'bg-brand-50 text-brand-700 border-brand-200',
   'Lead Reviewer': 'bg-violet-50 text-violet-700 border-violet-200',
   Manager: 'bg-amber-50 text-amber-700 border-amber-200',
-  Admin: 'bg-slate-800 text-white border-slate-800',
+  'Technical Analyst': 'bg-teal-50 text-teal-700 border-teal-200',
+  'System Manager': 'bg-slate-800 text-white border-slate-800',
 }
 const STATUS_DOT: Record<UserStatus, string> = {
   Active: 'text-emerald-500',
@@ -42,7 +43,7 @@ export default function UserManagement() {
   const counts = useMemo(() => {
     const active = users.filter((u) => u.status === 'Active').length
     const invited = users.filter((u) => u.status === 'Invited').length
-    const admins = users.filter((u) => u.role === 'Admin' || u.role === 'Manager').length
+    const admins = users.filter((u) => u.role === 'System Manager' || u.role === 'Technical Analyst' || u.role === 'Manager').length
     return { active, invited, admins }
   }, [users])
 
