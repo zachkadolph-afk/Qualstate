@@ -1,36 +1,34 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
-import { Clock, Activity, Play, Check, ArrowRight, Users2, Shuffle, Layers, Target, AlertTriangle } from 'lucide-react'
+import { Clock, Activity, Play, Check, ArrowRight, Users2, Shuffle, Layers, Target, AlertTriangle, GitBranch } from 'lucide-react'
 import { Card, PageHeader, LinePill, SeverityChip } from '../components/ui'
 import { useStore } from '../lib/store'
 import { assignableReviewers, TEAMS, Team } from '../data/users'
-import { ReviewType } from '../data/forms'
-import { POPULATION } from '../data/population'
+import { ReviewType, FORM_SEGMENTS } from '../data/forms'
+import { POPULATION, reviewTypeForStatus } from '../data/population'
 import { Line } from '../data/types'
 import { currency } from '../lib/scoring'
 
 /* ------------------------------------------------------------------ */
-/*  Sampling & Assignment — the sample is split into Diagnostic         */
-/*  (outcome-based, closed claims) and Targeted (real-time, open        */
-/*  claims) cohorts. Pick files within a cohort and assign them to the  */
-/*  reviewer pool (writes to the shared store → Queue).                 */
+/*  Sampling & Assignment — drill the book LOB -> sub-segment -> team,  */
+/*  split by review type (Diagnostic / Targeted), pick files, and       */
+/*  assign them to the reviewer pool (routing by Assignment Rules).     */
 /* ------------------------------------------------------------------ */
 
 type Strategy = 'full' | 'random' | 'risk'
 type Method = 'round-robin' | 'specialty' | 'load-balanced'
-type Line2 = 'All' | Line
 
 interface FileRow {
   id: string
   claimNumber: string
   line: Line
   peril: string
+  segment: string
   severity: 'Low' | 'Moderate' | 'High' | 'Severe'
   reserve: number
   team: string
   flags: string[]
-  real: boolean
 }
 
 const SEV_RANK: Record<string, number> = { Low: 0, Moderate: 1, High: 2, Severe: 3 }
@@ -44,14 +42,18 @@ const METHODS: { id: Method; title: string }[] = [
   { id: 'specialty', title: 'By specialty' },
   { id: 'load-balanced', title: 'Load-balanced' },
 ]
+const LOBS: ('All' | Line)[] = ['All', 'Property', 'Auto', 'Casualty']
 
 export default function Sampling() {
   const navigate = useNavigate()
-  const { reviewClaims, users, assignments, assignFiles, clearAssignments } = useStore()
+  const { users, assignments, assignFiles, clearAssignments } = useStore()
 
   const [reviewType, setReviewType] = useState<ReviewType>('Diagnostic')
+  // the LOB -> sub-segment -> team hierarchy
+  const [lob, setLob] = useState<'All' | Line>('All')
+  const [segment, setSegment] = useState<'All' | string>('All')
   const [team, setTeam] = useState<'All' | Team>('All')
-  const [line, setLine] = useState<Line2>('All')
+
   const [strategy, setStrategy] = useState<Strategy>('risk')
   const [rate, setRate] = useState(40)
   const [method, setMethod] = useState<Method>('specialty')
@@ -59,7 +61,6 @@ export default function Sampling() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [ran, setRan] = useState(0)
 
-  // reviewer pool, scoped to team when chosen
   const pool = useMemo(() => {
     const all = assignableReviewers(users)
     if (team === 'All') return all
@@ -67,28 +68,18 @@ export default function Sampling() {
     return scoped.length ? scoped : all
   }, [users, team])
 
-  // population split by review type
-  const closed = useMemo(() => POPULATION.filter((p) => p.status === 'Closed'), [])
-  const open = useMemo(() => POPULATION.filter((p) => p.status === 'Open'), [])
-  const cohortCount = (rows: typeof POPULATION) =>
-    rows.filter((p) => (team === 'All' || p.team === team) && (line === 'All' || p.line === line)).length
-  const diagnosticBacklog = cohortCount(closed)
-  const targetedInFlight = cohortCount(open)
+  const matchesHierarchy = (p: (typeof POPULATION)[number]) =>
+    (lob === 'All' || p.line === lob) && (segment === 'All' || p.segment === segment) && (team === 'All' || p.team === team)
 
-  // the file rows for the active cohort
+  // cohort counts honor the full hierarchy
+  const diagnosticCount = useMemo(() => POPULATION.filter((p) => p.status === 'Closed' && matchesHierarchy(p)).length, [lob, segment, team])
+  const targetedCount = useMemo(() => POPULATION.filter((p) => p.status === 'Open' && matchesHierarchy(p)).length, [lob, segment, team])
+
   const rows: FileRow[] = useMemo(() => {
-    if (reviewType === 'Diagnostic') {
-      // real settled, ready-to-review files (clickable end-to-end)
-      return reviewClaims
-        .filter((c) => line === 'All' || c.line === line)
-        .map((c) => ({ id: c.id, claimNumber: c.claimNumber, line: c.line, peril: c.perilType, severity: c.severity, reserve: c.reserveAmount, team: '—', flags: [], real: true }))
-    }
-    // open, in-flight files from the population
-    return open
-      .filter((p) => (team === 'All' || p.team === team) && (line === 'All' || p.line === line))
+    return POPULATION.filter((p) => reviewTypeForStatus(p.status) === reviewType && matchesHierarchy(p))
       .slice(0, 80)
-      .map((p) => ({ id: p.id, claimNumber: p.claimNumber, line: p.line, peril: p.peril, severity: p.severity, reserve: p.reserve, team: p.team, flags: p.flags, real: false }))
-  }, [reviewType, reviewClaims, open, team, line])
+      .map((p) => ({ id: p.id, claimNumber: p.claimNumber, line: p.line, peril: p.peril, segment: p.segment, severity: p.severity, reserve: p.reserve, team: p.team, flags: p.flags }))
+  }, [reviewType, lob, segment, team])
 
   function applyStrategy() {
     let ids: string[]
@@ -115,6 +106,13 @@ export default function Sampling() {
     const n = assignFiles(files, { reviewType, method, reviewers: pool.map((u) => u.name), autoRoute })
     setRan(n)
   }
+  function resetHierarchy(level: 'lob' | 'segment') {
+    if (level === 'lob') {
+      setSegment('All')
+      setTeam('All')
+    } else setTeam('All')
+    setSelected(new Set())
+  }
 
   const dist = useMemo(() => {
     const m: Record<string, number> = {}
@@ -132,30 +130,40 @@ export default function Sampling() {
       <div className="max-w-7xl mx-auto px-8 py-8">
         <PageHeader
           title="Sampling & Assignment"
-          subtitle="Split the book into Diagnostic (outcome-based) and Targeted (real-time) cohorts, pick files, and assign them."
+          subtitle="Drill the book by line of business, sub-segment, and team — split by review type — then assign files."
           right={
             <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-xl border border-brand-100 px-3 py-2 shadow-card">
               <Users2 size={16} className="text-brand-500" />
-              <span className="font-semibold text-brand-950">{pool.length}</span> reviewers in pool
+              <span className="font-semibold text-brand-950">{pool.length}</span> reviewers in scope
             </div>
           }
         />
 
-        {/* cohort split */}
+        {/* LOB -> sub-segment -> team hierarchy */}
+        <Card className="p-4 mb-5">
+          <div className="space-y-2.5">
+            <HierRow n={1} label="Line of business" options={LOBS} value={lob} onChange={(v) => { setLob(v as 'All' | Line); resetHierarchy('lob') }} />
+            <HierRow n={2} label="Sub-segment" options={['All', ...FORM_SEGMENTS]} value={segment} onChange={(v) => { setSegment(v); resetHierarchy('segment') }} />
+            <HierRow n={3} label="Team" options={['All', ...TEAMS] as ('All' | Team)[]} value={team} onChange={(v) => { setTeam(v as 'All' | Team); setSelected(new Set()) }} />
+          </div>
+          <div className="mt-3 pt-3 border-t border-brand-50 text-xs text-slate-500">
+            Scope: <span className="font-semibold text-brand-950">{lob === 'All' ? 'All LOB' : lob}</span> ›{' '}
+            <span className="font-semibold text-brand-950">{segment === 'All' ? 'All segments' : segment}</span> ›{' '}
+            <span className="font-semibold text-brand-950">{team === 'All' ? 'All teams' : team}</span>
+          </div>
+        </Card>
+
+        {/* review-type cohort split */}
         <div className="grid sm:grid-cols-2 gap-3 mb-5">
-          <CohortCard active={reviewType === 'Diagnostic'} onClick={() => { setReviewType('Diagnostic'); setSelected(new Set()) }} icon={Clock} title="Diagnostic" sub="Outcome-based · closed claims" count={diagnosticBacklog} note="settled-claim backlog" />
-          <CohortCard active={reviewType === 'Targeted'} onClick={() => { setReviewType('Targeted'); setSelected(new Set()) }} icon={Activity} title="Targeted" sub="Real-time · open claims" count={targetedInFlight} note="open claims in-flight" violet />
+          <CohortCard active={reviewType === 'Diagnostic'} onClick={() => { setReviewType('Diagnostic'); setSelected(new Set()) }} icon={Clock} title="Diagnostic" sub="Outcome-based · closed claims" count={diagnosticCount} note="settled-claim backlog" />
+          <CohortCard active={reviewType === 'Targeted'} onClick={() => { setReviewType('Targeted'); setSelected(new Set()) }} icon={Activity} title="Targeted" sub="Real-time · open claims" count={targetedCount} note="open claims in-flight" violet />
         </div>
 
         <div className="grid lg:grid-cols-[1fr_320px] gap-6">
           <div className="space-y-4">
-            {/* filters + strategy */}
+            {/* strategy */}
             <Card className="p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <FilterGroup label="Team" options={['All', ...TEAMS] as ('All' | Team)[]} value={team} onChange={(v) => { setTeam(v); setSelected(new Set()) }} />
-                <FilterGroup label="Line" options={['All', 'Property', 'Auto', 'Casualty'] as Line2[]} value={line} onChange={(v) => { setLine(v); setSelected(new Set()) }} />
-              </div>
-              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-brand-50">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mr-1">Sample</span>
                 {STRATEGIES.map((s) => {
                   const Icon = s.icon
@@ -171,18 +179,14 @@ export default function Sampling() {
                     <span className="font-semibold text-brand-700 w-8 tabular-nums">{rate}%</span>
                   </span>
                 )}
-                <button onClick={applyStrategy} className="ml-auto text-xs font-semibold text-brand-700 border border-brand-100 rounded-lg px-3 py-1.5 hover:bg-brand-50">
-                  Select sample
-                </button>
+                <button onClick={applyStrategy} className="ml-auto text-xs font-semibold text-brand-700 border border-brand-100 rounded-lg px-3 py-1.5 hover:bg-brand-50">Select sample</button>
               </div>
             </Card>
 
             {/* file list */}
             <Card className="p-0 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-brand-50">
-                <div className="text-sm font-bold text-brand-950">
-                  {reviewType} files <span className="text-slate-400 font-medium">· {rows.length} shown</span>
-                </div>
+                <div className="text-sm font-bold text-brand-950">{reviewType} files <span className="text-slate-400 font-medium">· {rows.length} shown</span></div>
                 <div className="flex items-center gap-2 text-xs">
                   <button onClick={() => setSelected(new Set(rows.map((r) => r.id)))} className="font-semibold text-slate-500 hover:text-brand-700">Select all</button>
                   <span className="text-slate-300">|</span>
@@ -194,23 +198,21 @@ export default function Sampling() {
                   const on = selected.has(r.id)
                   return (
                     <button key={r.id} onClick={() => toggle(r.id)} className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${on ? 'bg-brand-50/60' : 'hover:bg-slate-50'}`}>
-                      <span className={`w-4 h-4 rounded border grid place-items-center shrink-0 ${on ? 'bg-brand-600 border-brand-600' : 'border-slate-300'}`}>
-                        {on && <Check size={11} className="text-white" />}
-                      </span>
+                      <span className={`w-4 h-4 rounded border grid place-items-center shrink-0 ${on ? 'bg-brand-600 border-brand-600' : 'border-slate-300'}`}>{on && <Check size={11} className="text-white" />}</span>
                       <span className="font-semibold text-brand-950 text-sm w-28 shrink-0">{r.claimNumber}</span>
                       <LinePill line={r.line} />
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 hidden sm:block">{r.segment}</span>
                       <span className="text-xs text-slate-500 flex-1 min-w-0 truncate">{r.peril}</span>
+                      <span className="text-[10px] text-slate-400 hidden md:block truncate max-w-[120px]">{r.team}</span>
                       {r.flags.map((f) => (
-                        <span key={f} className="hidden md:flex items-center gap-1 text-[10px] font-semibold text-accent-600 bg-accent-50 rounded px-1.5 py-0.5" style={{ background: '#fff1e6' }}>
-                          <AlertTriangle size={9} /> {f}
-                        </span>
+                        <span key={f} className="hidden lg:flex items-center gap-1 text-[10px] font-semibold text-accent-600 rounded px-1.5 py-0.5" style={{ background: '#fff1e6' }}><AlertTriangle size={9} /> {f}</span>
                       ))}
                       <SeverityChip severity={r.severity} />
                       <span className="text-xs text-slate-500 w-20 text-right tabular-nums hidden sm:block">{currency(r.reserve)}</span>
                     </button>
                   )
                 })}
-                {rows.length === 0 && <div className="px-4 py-10 text-center text-sm text-slate-400">No files in this cohort for the current filters.</div>}
+                {rows.length === 0 && <div className="px-4 py-10 text-center text-sm text-slate-400">No files for this scope. Widen the LOB / segment / team.</div>}
               </div>
             </Card>
           </div>
@@ -224,34 +226,26 @@ export default function Sampling() {
               <div className="mt-3 text-4xl font-extrabold tabular-nums">{selectedCount}</div>
               <div className="text-sm text-brand-100/70">files selected ({coverage}% of shown)</div>
 
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-brand-100/60 mb-1.5">Assignment method</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {METHODS.map((m) => (
-                    <button key={m.id} onClick={() => setMethod(m.id)} className={`text-[11px] font-semibold px-2 py-1 rounded-md transition-colors ${method === m.id ? 'bg-white text-brand-800' : 'bg-white/10 text-brand-100/80 hover:bg-white/20'}`}>
-                      {m.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button onClick={() => setAutoRoute((a) => !a)} className="mt-4 w-full flex items-center justify-between gap-2 text-left">
-                <span className="text-xs text-brand-100/80">
-                  Route by Assignment Rules <span className="text-brand-100/50">(team + form per rule)</span>
-                </span>
-                <span className={`w-9 h-5 rounded-full relative transition-colors shrink-0 ${autoRoute ? 'bg-accent-500' : 'bg-white/20'}`}>
+              <button onClick={() => setAutoRoute((v) => !v)} className="mt-4 w-full flex items-center justify-between gap-2 rounded-lg bg-white/5 hover:bg-white/10 px-3 py-2 transition-colors">
+                <span className="flex items-center gap-2 text-sm"><GitBranch size={14} className="text-accent-400" /> Route by Assignment Rules</span>
+                <span className={`w-9 h-5 rounded-full relative transition-colors ${autoRoute ? 'bg-accent-500' : 'bg-white/20'}`}>
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${autoRoute ? 'left-4' : 'left-0.5'}`} />
                 </span>
               </button>
 
-              <button onClick={assign} disabled={selectedCount === 0} className={`mt-3 w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all ${selectedCount ? 'bg-accent-500 hover:bg-accent-600 text-white shadow-glow' : 'bg-white/10 text-brand-100/50 cursor-not-allowed'}`}>
+              <div className="mt-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-brand-100/60 mb-1.5">Method {autoRoute && <span className="text-brand-100/40">(within rule team)</span>}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {METHODS.map((m) => (
+                    <button key={m.id} onClick={() => setMethod(m.id)} className={`text-[11px] font-semibold px-2 py-1 rounded-md transition-colors ${method === m.id ? 'bg-white text-brand-800' : 'bg-white/10 text-brand-100/80 hover:bg-white/20'}`}>{m.title}</button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={assign} disabled={selectedCount === 0} className={`mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all ${selectedCount ? 'bg-accent-500 hover:bg-accent-600 text-white shadow-glow' : 'bg-white/10 text-brand-100/50 cursor-not-allowed'}`}>
                 <Play size={15} /> Assign {selectedCount} files
               </button>
-              {ran > 0 && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-emerald-300 font-semibold">
-                  <Check size={15} /> Assigned {ran} {reviewType} files.
-                </div>
-              )}
+              {ran > 0 && <div className="mt-3 flex items-center gap-2 text-sm text-emerald-300 font-semibold"><Check size={15} /> Assigned {ran} {reviewType} files.</div>}
             </Card>
 
             {dist.length > 0 && (
@@ -261,14 +255,9 @@ export default function Sampling() {
                   <button onClick={clearAssignments} className="text-[11px] font-semibold text-slate-400 hover:text-red-500">Clear</button>
                 </div>
                 {dist.map(([name, n]) => (
-                  <div key={name} className="flex items-center gap-2 text-sm py-0.5">
-                    <span className="text-slate-600 flex-1">{name}</span>
-                    <span className="font-semibold text-brand-950 tabular-nums">{n}</span>
-                  </div>
+                  <div key={name} className="flex items-center gap-2 text-sm py-0.5"><span className="text-slate-600 flex-1">{name}</span><span className="font-semibold text-brand-950 tabular-nums">{n}</span></div>
                 ))}
-                <button onClick={() => navigate('/queue')} className="mt-3 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-700 border border-brand-100 rounded-lg py-2 hover:bg-brand-50">
-                  Open queue <ArrowRight size={15} />
-                </button>
+                <button onClick={() => navigate('/queue')} className="mt-3 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-700 border border-brand-100 rounded-lg py-2 hover:bg-brand-50">Open queue <ArrowRight size={15} /></button>
               </Card>
             )}
 
@@ -294,6 +283,22 @@ export default function Sampling() {
   )
 }
 
+function HierRow<T extends string>({ n, label, options, value, onChange }: { n: number; label: string; options: T[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 w-40 shrink-0">
+        <div className="w-5 h-5 rounded-md bg-brand-600 text-white grid place-items-center font-bold text-[11px]">{n}</div>
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => (
+          <button key={o} onClick={() => onChange(o)} className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${value === o ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-brand-100 text-slate-500 hover:text-brand-700'}`}>{o}</button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CohortCard({ active, onClick, icon: Icon, title, sub, count, note, violet }: { active: boolean; onClick: () => void; icon: any; title: string; sub: string; count: number; note: string; violet?: boolean }) {
   return (
     <button onClick={onClick} className={`text-left p-4 rounded-2xl border transition-all flex items-center gap-4 ${active ? 'border-brand-500 bg-brand-50/60 shadow-glow' : 'border-brand-100 bg-white hover:border-brand-300'}`}>
@@ -306,18 +311,5 @@ function CohortCard({ active, onClick, icon: Icon, title, sub, count, note, viol
         <div className="text-[11px] text-slate-400">{note}</div>
       </div>
     </button>
-  )
-}
-
-function FilterGroup<T extends string>({ label, options, value, onChange }: { label: string; options: T[]; value: T; onChange: (v: T) => void }) {
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mr-0.5">{label}</span>
-      {options.map((o) => (
-        <button key={o} onClick={() => onChange(o)} className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${value === o ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-brand-100 text-slate-500 hover:text-brand-700'}`}>
-          {o}
-        </button>
-      ))}
-    </div>
   )
 }
