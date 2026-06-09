@@ -6,7 +6,7 @@ import { useStore } from '../lib/store'
 const links = [
   { to: '/dashboard', label: 'Quality Dashboard', icon: LayoutDashboard },
   { to: '/queue', label: 'Review Queue', icon: ClipboardCheck },
-  { to: '/how-it-works', label: 'How It Works', icon: Workflow },
+  { to: '/how-it-works', label: 'Vision', icon: Workflow },
 ]
 
 export default function Sidebar() {
