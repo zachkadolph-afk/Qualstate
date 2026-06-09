@@ -251,7 +251,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     coaching,
     addCoaching: (item) => {
       setCoaching((cs) => [{ ...item, id: newId('co'), createdBy: currentUser?.name ?? 'system', createdAt: new Date().toISOString().slice(0, 10) }, ...cs])
-      logEvent(item.kind === 'Rebuttal' ? 'Rebuttal submitted' : 'Result validated', `${item.claimNumber} · ${item.claimType}`)
+      logEvent(`Model feedback ${item.status.toLowerCase()}`, `${item.label} dissonance`)
     },
     updateCoaching: (id, patch) => setCoaching((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c))),
 

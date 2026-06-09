@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { ClipboardCheck, ShieldCheck, Sparkles, Workflow, BarChart3, RotateCcw, MessageSquareQuote, SlidersHorizontal } from 'lucide-react'
+import { ClipboardCheck, ShieldCheck, Sparkles, Workflow, BarChart3, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import Logo from './Logo'
 import { useStore } from '../lib/store'
 import { canConfigure } from '../data/users'
@@ -7,7 +7,6 @@ import { canConfigure } from '../data/users'
 const links = [
   { to: '/queue', label: 'Reviews', icon: ClipboardCheck, config: false },
   { to: '/results', label: 'Results', icon: BarChart3, config: false },
-  { to: '/coaching', label: 'Model Feedback', icon: MessageSquareQuote, config: false },
   { to: '/system', label: 'System Management', icon: SlidersHorizontal, config: true },
   { to: '/how-it-works', label: 'Vision', icon: Workflow, config: false },
 ]

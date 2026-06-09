@@ -1,157 +1,165 @@
-import { useMemo, useState } from 'react'
-import { MessageSquareQuote, Check, X, Sparkles, ThumbsUp, RefreshCw } from 'lucide-react'
-import { Card, PageHeader, LinePill } from '../components/ui'
+import { useMemo } from 'react'
+import { Layers, Check, X, RefreshCw, AlertTriangle, Cpu, TrendingUp, TrendingDown } from 'lucide-react'
+import { Card, PageHeader } from '../components/ui'
 import { useStore } from '../lib/store'
-import { CoachingKind, CoachingStatus } from '../data/coaching'
-import { scoreBand } from '../lib/scoring'
+import { CoachingStatus } from '../data/coaching'
+import { QUESTIONNAIRES } from '../data/questions'
 
 /* ------------------------------------------------------------------ */
-/*  Model Feedback — disseminated claim-quality results that users      */
-/*  validate or rebut. The feedback is signal that improves the model,  */
-/*  not employee coaching. Visible to all roles.                        */
+/*  Model Feedback (System Manager) — the back-end view of batched      */
+/*  human–AI dissonance from completed reviews. The System Manager       */
+/*  decides which areas to incorporate into the next model update.      */
 /* ------------------------------------------------------------------ */
 
-const basePeril = (p: string) => p.split('—')[0].trim()
+const Q_LABEL: Record<string, string> = {}
+QUESTIONNAIRES.Property.forEach((q) => (Q_LABEL[q.id] = q.label))
 
-const KIND_STYLE: Record<CoachingKind, string> = {
-  Validation: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Rebuttal: 'bg-orange-50 text-orange-700 border-orange-200',
+interface Batch {
+  key: string
+  label: string
+  count: number
+  total: number
+  aiHigh: number // AI said Yes, human said No (AI too lenient)
+  aiLow: number // AI said No, human said Yes (AI too harsh)
+  samples: string[]
 }
+
 const STATUS_STYLE: Record<CoachingStatus, string> = {
-  Submitted: 'bg-amber-50 text-amber-700',
-  Incorporated: 'bg-emerald-50 text-emerald-700',
-  Dismissed: 'bg-slate-100 text-slate-500',
+  Incorporated: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Dismissed: 'bg-slate-100 text-slate-500 border-slate-200',
 }
-const STATUSES: CoachingStatus[] = ['Submitted', 'Incorporated', 'Dismissed']
 
 export default function Coaching() {
   const { coaching, addCoaching, updateCoaching, completedReviews, getClaim } = useStore()
-  const [rebutFor, setRebutFor] = useState<string | null>(null)
-  const [rebutNote, setRebutNote] = useState('')
 
-  // disseminated results awaiting feedback: notable completed reviews
-  // (below-standard or low calibration), de-duped, excluding ones already given feedback.
-  const results = useMemo(() => {
-    const seen = new Set<string>()
-    const done = new Set(coaching.map((c) => c.claimNumber))
-    const out: { claimId: string; claimNumber: string; claimType: string; line: any; score: number; calibration: number }[] = []
+  const { batches, totalSignals } = useMemo(() => {
+    const map: Record<string, Batch> = {}
+    let totalSignals = 0
     for (const r of completedReviews) {
-      if (r.qualityScore >= 70 && r.calibration >= 80) continue
-      if (seen.has(r.claimId)) continue
-      const c = getClaim(r.claimId)
-      if (!c) continue
-      seen.add(r.claimId)
-      if (done.has(c.claimNumber)) continue
-      out.push({ claimId: r.claimId, claimNumber: c.claimNumber, claimType: `${c.line} · ${basePeril(c.perilType)}`, line: c.line, score: r.qualityScore, calibration: r.calibration })
-      if (out.length >= 10) break
+      const claim = getClaim(r.claimId)
+      if (!claim) continue
+      const agentMap: Record<string, string> = {}
+      claim.agentAnswers.forEach((a) => (agentMap[a.questionId] = a.value))
+      for (const a of r.reviewerAnswers) {
+        if (a.value == null) continue
+        const agentVal = agentMap[a.questionId]
+        const b = (map[a.questionId] ??= { key: a.questionId, label: Q_LABEL[a.questionId] || a.questionId, count: 0, total: 0, aiHigh: 0, aiLow: 0, samples: [] })
+        b.total++
+        if (a.value !== agentVal) {
+          b.count++
+          totalSignals++
+          if (agentVal === 'yes' && a.value === 'no') b.aiHigh++
+          else if (agentVal === 'no' && a.value === 'yes') b.aiLow++
+          if (b.samples.length < 4) b.samples.push(claim.claimNumber)
+        }
+      }
     }
-    return out
-  }, [completedReviews, getClaim, coaching])
+    const batches = Object.values(map)
+      .filter((b) => b.count > 0)
+      .sort((a, b) => b.count - a.count)
+    return { batches, totalSignals }
+  }, [completedReviews, getClaim])
 
-  function validate(r: (typeof results)[number]) {
-    addCoaching({ claimId: r.claimId, claimNumber: r.claimNumber, claimType: r.claimType, kind: 'Validation', status: 'Submitted', note: 'Confirmed the AI finding is correct.' })
-  }
-  function submitRebuttal(r: (typeof results)[number]) {
-    addCoaching({ claimId: r.claimId, claimNumber: r.claimNumber, claimType: r.claimType, kind: 'Rebuttal', status: 'Submitted', note: rebutNote.trim() || 'Reviewer rebutted the AI finding.' })
-    setRebutFor(null)
-    setRebutNote('')
+  const decisionFor = (key: string) => coaching.find((c) => c.key === key)
+  function decide(key: string, label: string, status: CoachingStatus) {
+    const existing = decisionFor(key)
+    if (existing) updateCoaching(existing.id, { status })
+    else addCoaching({ key, label, status, note: '' })
   }
 
-  const validations = coaching.filter((c) => c.kind === 'Validation').length
-  const rebuttals = coaching.filter((c) => c.kind === 'Rebuttal').length
   const incorporated = coaching.filter((c) => c.status === 'Incorporated').length
+  const dismissed = coaching.filter((c) => c.status === 'Dismissed').length
+  const pending = batches.filter((b) => !decisionFor(b.key)).length
 
   return (
     <div className="bg-grid min-h-screen">
       <div className="max-w-7xl mx-auto px-8 py-8">
         <PageHeader
           title="Model Feedback"
-          subtitle="Disseminated claim-quality results, validated or rebutted by reviewers — the signal that improves the model."
+          subtitle="Batched human–AI dissonance from completed reviews. Decide what to push into the next model update."
           right={
             <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-xl border border-brand-100 px-3 py-2 shadow-card">
-              <Sparkles size={16} className="text-accent-500" />
-              <span className="font-semibold text-brand-950">{coaching.length}</span> feedback signals
+              <Cpu size={16} className="text-brand-500" />
+              <span className="font-semibold text-brand-950">{totalSignals}</span> dissonance signals
             </div>
           }
         />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={ThumbsUp} label="Validations" value={`${validations}`} sub="AI confirmed correct" />
-          <Kpi icon={MessageSquareQuote} label="Rebuttals" value={`${rebuttals}`} sub="AI corrected" orange />
-          <Kpi icon={RefreshCw} label="Incorporated" value={`${incorporated}`} sub="fed to next model cycle" />
-          <Kpi icon={Sparkles} label="Awaiting feedback" value={`${results.length}`} sub="disseminated results" />
+          <Kpi icon={Layers} label="Dissonance signals" value={`${totalSignals}`} sub="human ≠ AI, all reviews" />
+          <Kpi icon={AlertTriangle} label="Awaiting decision" value={`${pending}`} sub="areas to triage" orange />
+          <Kpi icon={RefreshCw} label="Incorporated" value={`${incorporated}`} sub="queued for next update" />
+          <Kpi icon={X} label="Dismissed" value={`${dismissed}`} sub="not model errors" />
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* disseminated results awaiting feedback */}
-          <div>
-            <h3 className="font-bold text-brand-950 mb-3 flex items-center gap-2"><Sparkles size={16} className="text-brand-600" /> Results for feedback</h3>
-            <div className="space-y-3">
-              {results.map((r) => {
-                const band = scoreBand(r.score)
-                const rebutting = rebutFor === r.claimId
-                return (
-                  <Card key={r.claimId} className="p-4">
-                    <div className="flex items-center gap-3">
-                      <LinePill line={r.line} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-brand-950">{r.claimNumber}</div>
-                        <div className="text-xs text-slate-400">{r.claimType} · AI calibration {r.calibration}%</div>
-                      </div>
-                      <span className="text-sm font-bold px-2.5 py-1 rounded-lg tabular-nums w-12 text-center" style={{ color: band.color, background: band.bg }}>{r.score}</span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2 flex-wrap">
-                      <button onClick={() => validate(r)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
-                        <Check size={14} /> Validate
-                      </button>
-                      <button onClick={() => { setRebutFor(rebutting ? null : r.claimId); setRebutNote('') }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${rebutting ? 'bg-orange-600 border-orange-600 text-white' : 'border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-700'}`}>
-                        <X size={14} /> Rebut
-                      </button>
-                      <span className="text-[11px] text-slate-400 ml-1">Feedback trains the model — it doesn't grade people.</span>
-                    </div>
-                    {rebutting && (
-                      <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50/50 p-3 animate-fadeup">
-                        <textarea value={rebutNote} onChange={(e) => setRebutNote(e.target.value)} rows={2} placeholder="Why is the AI finding wrong? (this correction becomes training signal)" className="w-full text-sm rounded-lg border border-orange-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none" />
-                        <button onClick={() => submitRebuttal(r)} className="mt-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold px-3.5 py-1.5 rounded-lg">Submit rebuttal</button>
-                      </div>
-                    )}
-                  </Card>
-                )
-              })}
-              {results.length === 0 && (
-                <Card className="p-10 text-center text-slate-400">
-                  <Check size={36} className="mx-auto mb-2 text-emerald-400" />
-                  <p className="font-semibold text-slate-600">All disseminated results have feedback.</p>
-                </Card>
-              )}
-            </div>
-          </div>
+        <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
+          <Cpu size={15} className="text-brand-500" />
+          Each area below batches every review where a human disagreed with the AI. Incorporating queues that correction for the next training cycle.
+        </div>
 
-          {/* feedback signal log */}
-          <div>
-            <h3 className="font-bold text-brand-950 mb-3 flex items-center gap-2"><RefreshCw size={16} className="text-accent-500" /> Feedback signal</h3>
-            <div className="space-y-3">
-              {coaching.map((c) => (
-                <Card key={c.id} className="p-4">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${KIND_STYLE[c.kind]}`}>{c.kind}</span>
-                    <span className="text-sm font-semibold text-brand-950">{c.claimNumber}</span>
-                    <span className="text-xs text-slate-400">{c.claimType}</span>
-                    <span className="ml-auto text-[11px] text-slate-400">{c.createdBy} · {c.createdAt}</span>
+        <div className="space-y-3">
+          {batches.map((b) => {
+            const decision = decisionFor(b.key)
+            const leansHigh = b.aiHigh >= b.aiLow
+            return (
+              <Card key={b.key} className="p-5">
+                <div className="flex items-start gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[220px]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-brand-950">{b.label}</span>
+                      <span className="text-xs text-slate-400">· {b.count} of {b.total} reviews</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2 text-sm">
+                      {leansHigh ? (
+                        <span className="flex items-center gap-1 text-orange-600 font-semibold"><TrendingUp size={14} /> AI too lenient</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-brand-600 font-semibold"><TrendingDown size={14} /> AI too harsh</span>
+                      )}
+                      <span className="text-slate-400">·</span>
+                      <span className="text-slate-500 text-xs">{b.aiHigh} said Yes→No · {b.aiLow} said No→Yes</span>
+                    </div>
+                    <div className="mt-2 text-[11px] text-slate-400">e.g. {b.samples.join(', ')}{b.count > b.samples.length ? ' …' : ''}</div>
                   </div>
-                  <p className="text-sm text-slate-600 mt-2 leading-relaxed">{c.note}</p>
-                  <div className="mt-2.5 flex items-center gap-1.5">
-                    {STATUSES.map((s) => (
-                      <button key={s} onClick={() => updateCoaching(c.id, { status: s })} className={`text-[11px] font-semibold px-2 py-1 rounded-md transition-colors ${c.status === s ? STATUS_STYLE[s] : 'text-slate-400 hover:text-brand-700'}`}>
-                        {s}
-                      </button>
-                    ))}
+
+                  {/* signal strength bar */}
+                  <div className="w-40 shrink-0">
+                    <div className="text-[11px] text-slate-400 mb-1">disagreement rate</div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full bg-accent-500" style={{ width: `${Math.round((b.count / b.total) * 100)}%` }} />
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1 tabular-nums">{Math.round((b.count / b.total) * 100)}%</div>
                   </div>
-                </Card>
-              ))}
-              {coaching.length === 0 && <Card className="p-10 text-center text-sm text-slate-400">No feedback yet. Validate or rebut a result to start the signal.</Card>}
-            </div>
-          </div>
+
+                  {/* decision */}
+                  <div className="flex items-center gap-2">
+                    {decision ? (
+                      <>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${STATUS_STYLE[decision.status]}`}>{decision.status}</span>
+                        <button onClick={() => decide(b.key, b.label, decision.status === 'Incorporated' ? 'Dismissed' : 'Incorporated')} className="text-[11px] font-semibold text-slate-400 hover:text-brand-700 border border-brand-100 rounded-md px-2 py-1">
+                          Change
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => decide(b.key, b.label, 'Incorporated')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                          <Check size={14} /> Incorporate
+                        </button>
+                        <button onClick={() => decide(b.key, b.label, 'Dismissed')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:border-slate-400">
+                          <X size={14} /> Dismiss
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+          {batches.length === 0 && (
+            <Card className="p-12 text-center text-slate-400">
+              <Check size={40} className="mx-auto mb-3 text-emerald-400" />
+              <p className="font-semibold text-slate-600">No dissonance — humans and the AI agree across the board.</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -49,7 +49,7 @@ export default function App() {
           <Route path="/results" element={<Results />} />
           <Route path="/scorecards" element={<Results />} />
           <Route path="/calibration" element={<Results />} />
-          <Route path="/coaching" element={<Coaching />} />
+          <Route path="/coaching" element={admin ? <Coaching /> : <Navigate to={home} replace />} />
           <Route path="/system" element={admin ? <SystemManagement /> : <Navigate to={home} replace />} />
           <Route path="/audit" element={admin ? <Audit /> : <Navigate to={home} replace />} />
           <Route path="/questionnaire" element={admin ? <QuestionnaireBuilder /> : <Navigate to={home} replace />} />

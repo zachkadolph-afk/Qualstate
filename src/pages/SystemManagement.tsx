@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ListChecks, GitBranch, Users, Filter, ScrollText, ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { ListChecks, GitBranch, Users, Filter, ScrollText, ArrowRight, SlidersHorizontal, Cpu } from 'lucide-react'
 import { Card, PageHeader } from '../components/ui'
 import { useStore } from '../lib/store'
 
@@ -23,6 +23,12 @@ const GROUPS: {
     group: 'Operations',
     tools: [
       { to: '/sampling', icon: Filter, title: 'Sampling & Assignment', body: 'Drill the book by LOB, sub-segment, and team; split into Diagnostic and Targeted cohorts; assign files.' },
+    ],
+  },
+  {
+    group: 'Model',
+    tools: [
+      { to: '/coaching', icon: Cpu, title: 'Model Feedback', body: 'Batched human–AI dissonance from completed reviews. Decide which corrections to incorporate into the next model update.' },
     ],
   },
   {
