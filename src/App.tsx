@@ -5,6 +5,10 @@ import Dashboard from './pages/Dashboard'
 import Queue from './pages/Queue'
 import Review from './pages/Review'
 import HowItWorks from './pages/HowItWorks'
+import Scorecards from './pages/Scorecards'
+import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
+import UserManagement from './pages/UserManagement'
+import Sampling from './pages/Sampling'
 import Sidebar from './components/Sidebar'
 
 export default function App() {
@@ -28,6 +32,10 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/review/:id" element={<Review />} />
+          <Route path="/scorecards" element={<Scorecards />} />
+          <Route path="/questionnaire" element={<QuestionnaireBuilder />} />
+          <Route path="/users" element={<UserManagement />} />
+          <Route path="/sampling" element={<Sampling />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

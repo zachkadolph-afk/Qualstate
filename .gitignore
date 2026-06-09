@@ -5,3 +5,4 @@ dist
 npm-debug.log*
 tsconfig.tsbuildinfo
 qualstate-site.zip
+qualstate-demo.html
