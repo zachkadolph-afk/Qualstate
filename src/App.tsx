@@ -7,8 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Queue from './pages/Queue'
 import Review from './pages/Review'
 import HowItWorks from './pages/HowItWorks'
-import Scorecards from './pages/Scorecards'
-import Calibration from './pages/Calibration'
+import Results from './pages/Results'
 import Coaching from './pages/Coaching'
 import Audit from './pages/Audit'
 import QuestionnaireBuilder from './pages/QuestionnaireBuilder'
@@ -41,8 +40,9 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/review/:id" element={<Review />} />
-          <Route path="/scorecards" element={<Scorecards />} />
-          <Route path="/calibration" element={<Calibration />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/scorecards" element={<Results />} />
+          <Route path="/calibration" element={<Results />} />
           <Route path="/coaching" element={<Coaching />} />
           <Route path="/system" element={admin ? <SystemManagement /> : <Navigate to="/dashboard" replace />} />
           <Route path="/audit" element={admin ? <Audit /> : <Navigate to="/dashboard" replace />} />
