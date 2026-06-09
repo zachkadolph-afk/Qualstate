@@ -1,6 +1,7 @@
-import { Line } from './types'
+import { Claim, AgentAnswer, AnswerValue, Line } from './types'
 import { ReviewType } from './forms'
 import { FORM_SCOPES } from './forms'
+import { QUESTIONNAIRES } from './questions'
 import { Team, TEAMS } from './users'
 
 /* ------------------------------------------------------------------ */
@@ -92,3 +93,60 @@ export function buildPopulation(n = 480): PopClaim[] {
 export const POPULATION: PopClaim[] = buildPopulation()
 
 export const TEAM_LIST = TEAMS
+
+/* ------------------------------------------------------------------ */
+/*  Turn a population row into a reviewable Claim (synthetic AI pass)   */
+/*  so open/targeted files can be opened and reviewed end-to-end.      */
+/* ------------------------------------------------------------------ */
+
+function hashStr(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+export function popClaimToClaim(p: PopClaim): Claim {
+  const rnd = mulberry32(hashStr(p.id))
+  const agentAnswers: AgentAnswer[] = QUESTIONNAIRES[p.line].map((q) => {
+    const r = rnd()
+    const value: AnswerValue = r < 0.7 ? 'yes' : r < 0.92 ? 'no' : 'na'
+    return { questionId: q.id, value, confidence: Math.round((0.6 + rnd() * 0.38) * 100) / 100, rationale: '', evidence: [] }
+  })
+  const closed = p.status === 'Closed'
+  const dol = new Date(2026, 5, 9)
+  dol.setDate(dol.getDate() - p.ageDays - 10)
+  const dc = new Date(2026, 5, 9)
+  dc.setDate(dc.getDate() - Math.max(0, p.ageDays - 5))
+  return {
+    id: p.id,
+    claimNumber: p.claimNumber,
+    policyNumber: `POL-${p.id}`,
+    line: p.line,
+    perilType: p.peril,
+    status: closed ? 'Completed' : 'Ready for Review',
+    dateOfLoss: dol.toISOString().slice(0, 10),
+    dateClosed: closed ? dc.toISOString().slice(0, 10) : '—',
+    insured: 'Policyholder',
+    adjuster: 'Assigned Adjuster',
+    state: p.state,
+    reserveAmount: p.reserve,
+    paidAmount: closed ? Math.round((p.reserve * 0.7) / 100) * 100 : 0,
+    severity: p.severity,
+    summary: `${p.segment} ${p.line} — ${p.peril} (${p.status.toLowerCase()}). ${p.flags.length ? 'Risk flags: ' + p.flags.join(', ') + '.' : ''}`,
+    facts: [
+      { label: 'Status', value: p.status },
+      { label: 'Peril', value: p.peril },
+      { label: 'Segment', value: p.segment },
+      { label: 'Reserve', value: `$${p.reserve.toLocaleString()}` },
+    ],
+    timeline: [],
+    parties: [],
+    agentAnswers,
+  }
+}
+
+/** all population rows resolved to reviewable claims, keyed by id */
+export const POP_CLAIMS: Record<string, Claim> = Object.fromEntries(POPULATION.map((p) => [p.id, popClaimToClaim(p)]))

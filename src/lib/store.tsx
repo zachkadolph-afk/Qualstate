@@ -4,6 +4,7 @@ import { COMPLETED_REVIEWS, HISTORY_CLAIMS, REVIEW_CLAIMS } from '../data/claims
 import { ReviewForm, ReviewType, buildFormLibrary, cloneSpine } from '../data/forms'
 import { User, seedUsers, assignableReviewers } from '../data/users'
 import { AssignmentRule, seedRules, matchRule } from '../data/rules'
+import { POP_CLAIMS } from '../data/population'
 
 /* ------------------------------------------------------------------ */
 /*  Coordinated, persisted system of record. Every module reads/writes */
@@ -57,7 +58,7 @@ interface Store {
   // sampling -> queue assignment
   assignments: Record<string, Assignment>
   runAssignment: (opts: AssignmentOpts) => number
-  assignFiles: (files: { id: string; line: Line }[], opts: { reviewType: ReviewType; method: AssignmentOpts['method']; reviewers?: string[] }) => number
+  assignFiles: (files: { id: string; line: Line; peril?: string }[], opts: { reviewType: ReviewType; method: AssignmentOpts['method']; reviewers?: string[]; autoRoute?: boolean }) => number
   clearAssignments: () => void
 
   resetDemo: () => void
@@ -123,9 +124,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const completedSet = new Set(completedIds)
   const completedReviews = [...submitted, ...COMPLETED_REVIEWS]
-  const reviewClaims = REVIEW_CLAIMS.filter((c) => !completedSet.has(c.id))
+  // queue = pending settled files + any assigned (open/targeted) population files
+  const reviewClaims = [
+    ...REVIEW_CLAIMS.filter((c) => !completedSet.has(c.id)),
+    ...Object.keys(assignments)
+      .filter((id) => id.startsWith('pop_') && !completedSet.has(id) && POP_CLAIMS[id])
+      .map((id) => POP_CLAIMS[id]),
+  ]
 
-  const getClaim = (id: string) => REVIEW_CLAIMS.find((c) => c.id === id) || HISTORY_CLAIMS[id]
+  const getClaim = (id: string) => REVIEW_CLAIMS.find((c) => c.id === id) || HISTORY_CLAIMS[id] || POP_CLAIMS[id]
   const getFormForClaim = (claim: Claim) => {
     const a = assignments[claim.id]
     // an explicit assignment form (from sampling) wins
@@ -236,28 +243,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setAssignments(next)
       return Object.keys(next).length
     },
-    assignFiles: (files, { reviewType, method, reviewers }) => {
-      const poolNames = reviewers && reviewers.length ? reviewers : assignableReviewers(users).map((u) => u.name)
-      if (poolNames.length === 0 || files.length === 0) return 0
+    assignFiles: (files, { reviewType, method, reviewers, autoRoute }) => {
+      const fallbackPool = reviewers && reviewers.length ? reviewers : assignableReviewers(users).map((u) => u.name)
+      if (files.length === 0) return 0
       const next = { ...assignments }
       const load: Record<string, number> = {}
-      poolNames.forEach((n) => (load[n] = 0))
-      Object.values(next).forEach((a) => {
-        if (load[a.reviewer] != null) load[a.reviewer]++
-      })
-      files.forEach((f, i) => {
+      Object.values(next).forEach((a) => (load[a.reviewer] = (load[a.reviewer] || 0) + 1))
+      const rr: Record<string, number> = {}
+      let assigned = 0
+      files.forEach((f) => {
+        // rule-based routing: the matching rule's team (and form) take over
+        const rule = autoRoute ? matchRule(rules, f.line, f.peril ?? '', reviewType) : undefined
+        const teamName = rule && rule.team !== 'Any' ? rule.team : undefined
+        let names = teamName ? assignableReviewers(users).filter((u) => u.team === teamName).map((u) => u.name) : fallbackPool
+        if (!names.length) names = fallbackPool
+        if (!names.length) return
+        const key = names.join('|')
         let reviewer: string
         if (method === 'load-balanced') {
-          reviewer = poolNames.reduce((m, n) => (load[n] < load[m] ? n : m), poolNames[0])
-          load[reviewer]++
+          reviewer = names.reduce((m, n) => ((load[n] || 0) < (load[m] || 0) ? n : m), names[0])
         } else {
-          reviewer = poolNames[i % poolNames.length]
+          rr[key] = (rr[key] ?? -1) + 1
+          reviewer = names[rr[key] % names.length]
         }
-        const form = publishedFormFor(forms, f.line, reviewType)
+        load[reviewer] = (load[reviewer] || 0) + 1
+        const ruleForm = rule?.formId ? forms.find((x) => x.id === rule.formId) : undefined
+        const form = ruleForm || publishedFormFor(forms, f.line, reviewType)
         next[f.id] = { claimId: f.id, reviewer, formId: form?.id ?? '', reviewType }
+        assigned++
       })
       setAssignments(next)
-      return files.length
+      return assigned
     },
     clearAssignments: () => setAssignments({}),
 

@@ -55,6 +55,7 @@ export default function Sampling() {
   const [strategy, setStrategy] = useState<Strategy>('risk')
   const [rate, setRate] = useState(40)
   const [method, setMethod] = useState<Method>('specialty')
+  const [autoRoute, setAutoRoute] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [ran, setRan] = useState(0)
 
@@ -110,8 +111,8 @@ export default function Sampling() {
     })
   }
   function assign() {
-    const files = rows.filter((r) => selected.has(r.id)).map((r) => ({ id: r.id, line: r.line }))
-    const n = assignFiles(files, { reviewType, method, reviewers: pool.map((u) => u.name) })
+    const files = rows.filter((r) => selected.has(r.id)).map((r) => ({ id: r.id, line: r.line, peril: r.peril }))
+    const n = assignFiles(files, { reviewType, method, reviewers: pool.map((u) => u.name), autoRoute })
     setRan(n)
   }
 
@@ -234,7 +235,16 @@ export default function Sampling() {
                 </div>
               </div>
 
-              <button onClick={assign} disabled={selectedCount === 0} className={`mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all ${selectedCount ? 'bg-accent-500 hover:bg-accent-600 text-white shadow-glow' : 'bg-white/10 text-brand-100/50 cursor-not-allowed'}`}>
+              <button onClick={() => setAutoRoute((a) => !a)} className="mt-4 w-full flex items-center justify-between gap-2 text-left">
+                <span className="text-xs text-brand-100/80">
+                  Route by Assignment Rules <span className="text-brand-100/50">(team + form per rule)</span>
+                </span>
+                <span className={`w-9 h-5 rounded-full relative transition-colors shrink-0 ${autoRoute ? 'bg-accent-500' : 'bg-white/20'}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${autoRoute ? 'left-4' : 'left-0.5'}`} />
+                </span>
+              </button>
+
+              <button onClick={assign} disabled={selectedCount === 0} className={`mt-3 w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all ${selectedCount ? 'bg-accent-500 hover:bg-accent-600 text-white shadow-glow' : 'bg-white/10 text-brand-100/50 cursor-not-allowed'}`}>
                 <Play size={15} /> Assign {selectedCount} files
               </button>
               {ran > 0 && (
