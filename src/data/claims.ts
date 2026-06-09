@@ -1,6 +1,6 @@
-import { AgentAnswer, AnswerValue, Claim, CompletedReview, Line } from './types'
+import { AgentAnswer, AnswerValue, Claim, CompletedReview, Line, ReviewerAnswer } from './types'
 import { QUESTIONNAIRES } from './questions'
-import { scoreAnswers } from '../lib/scoring'
+import { scoreAnswers, computeReview } from '../lib/scoring'
 
 function aa(
   questionId: string,
@@ -645,3 +645,119 @@ export const HISTORY_CLAIMS: Record<string, Claim> = {}
     })
   }
 })()
+
+/* ------------------------------------------------------------------ */
+/*  Named, recently-completed reviews. Distinct from the pending queue */
+/*  so nothing appears as both "Ready for Review" and "Completed".     */
+/*  These surface real claim numbers in the dashboard's Recent Reviews */
+/*  and extend the quality/calibration trend to the current week.      */
+/*  Scores are computed through the real computeReview() so the agree/ */
+/*  disagree mix drives quality, AI calibration, and per-question      */
+/*  reliability exactly as a live review would.                        */
+/* ------------------------------------------------------------------ */
+
+interface NamedReviewSeed {
+  id: string
+  claimNumber: string
+  line: Line
+  perilType: string
+  insured: string
+  adjuster: string
+  state: string
+  severity: Claim['severity']
+  reserveAmount: number
+  paidAmount: number
+  completedAt: string
+  reviewer: string
+  /** the AI first-pass value per question id */
+  agent: Record<string, AnswerValue>
+  /** questions the reviewer corrected: id -> corrected value (rest are agreed) */
+  corrections: Record<string, AnswerValue>
+}
+
+// ordered oldest -> newest; each is unshifted so the newest lands on top
+const NAMED_RECENT: NamedReviewSeed[] = [
+  {
+    id: 'H-AU-2207', claimNumber: 'AU-2024-2207', line: 'Auto', perilType: 'Total Loss — Collision',
+    insured: 'Renata Vasquez', adjuster: 'M. Russo', state: 'GA', severity: 'High',
+    reserveAmount: 27500, paidAmount: 24100, completedAt: '2026-06-02', reviewer: 'K. Park',
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'yes', damages: 'partial', liability: 'yes', recovery: 'partial', payment: 'yes', compliance: 'yes', documentation: 'yes' },
+    corrections: { recovery: 'no' },
+  },
+  {
+    id: 'H-PR-2208', claimNumber: 'PR-2024-2208', line: 'Property', perilType: 'Water Damage — Supply Line',
+    insured: 'The Hollis Family', adjuster: 'D. Okafor', state: 'TX', severity: 'Moderate',
+    reserveAmount: 31000, paidAmount: 27450, completedAt: '2026-06-03', reviewer: 'A. Reyes',
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'yes', reserving: 'partial', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'partial' },
+    corrections: { reserving: 'no' },
+  },
+  {
+    id: 'H-CA-2209', claimNumber: 'CA-2024-2209', line: 'Casualty', perilType: 'Premises — Slip & Fall',
+    insured: 'Westgate Retail LLC', adjuster: 'S. Whitaker', state: 'FL', severity: 'High',
+    reserveAmount: 72000, paidAmount: 51500, completedAt: '2026-06-05', reviewer: 'T. Coleman',
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'partial', reserving: 'partial', damages: 'yes', liability: 'partial', recovery: 'na', payment: 'yes', compliance: 'partial', documentation: 'partial' },
+    corrections: { investigation: 'no', compliance: 'no' },
+  },
+  {
+    id: 'H-PR-2210', claimNumber: 'PR-2024-2210', line: 'Property', perilType: 'Wind/Hail — Roof',
+    insured: 'Carl & Maria Denton', adjuster: 'J. Tran', state: 'OK', severity: 'Moderate',
+    reserveAmount: 19500, paidAmount: 0, completedAt: '2026-06-06', reviewer: 'M. Devi',
+    agent: { contact: 'yes', coverage: 'yes', investigation: 'no', reserving: 'partial', damages: 'no', liability: 'partial', recovery: 'na', payment: 'na', compliance: 'partial', documentation: 'partial' },
+    corrections: { damages: 'partial', documentation: 'no' },
+  },
+  {
+    id: 'H-CA-2211', claimNumber: 'CA-2024-2211', line: 'Casualty', perilType: 'Dog Bite — Bodily Injury',
+    insured: 'Yusuf Rahman', adjuster: 'B. Feldman', state: 'IL', severity: 'Moderate',
+    reserveAmount: 24000, paidAmount: 18250, completedAt: '2026-06-08', reviewer: 'J. Salazar',
+    agent: { contact: 'yes', coverage: 'partial', investigation: 'yes', reserving: 'yes', damages: 'yes', liability: 'yes', recovery: 'na', payment: 'yes', compliance: 'yes', documentation: 'yes' },
+    corrections: {},
+  },
+]
+
+for (const s of NAMED_RECENT) {
+  const questions = QUESTIONNAIRES[s.line]
+  const claim: Claim = {
+    id: s.id,
+    claimNumber: s.claimNumber,
+    policyNumber: `POL-${s.id}`,
+    line: s.line,
+    perilType: s.perilType,
+    status: 'Completed',
+    dateOfLoss: s.completedAt,
+    dateClosed: s.completedAt,
+    insured: s.insured,
+    adjuster: s.adjuster,
+    state: s.state,
+    reserveAmount: s.reserveAmount,
+    paidAmount: s.paidAmount,
+    severity: s.severity,
+    summary: '',
+    facts: [],
+    timeline: [],
+    parties: [],
+    agentAnswers: questions.map((q) => aa(q.id, s.agent[q.id], 0.86, '', [])),
+  }
+  HISTORY_CLAIMS[s.id] = claim
+
+  const reviewerRec: Record<string, ReviewerAnswer> = {}
+  const reviewerAnswers: ReviewerAnswer[] = questions.map((q) => {
+    const corrected = s.corrections[q.id]
+    const ra: ReviewerAnswer = corrected
+      ? { questionId: q.id, decision: 'disagree', correctedValue: corrected, note: 'Reviewer adjusted per file evidence.' }
+      : { questionId: q.id, decision: 'agree' }
+    reviewerRec[q.id] = ra
+    return ra
+  })
+
+  const r = computeReview(claim, reviewerRec)
+  // newest unshifted last => ends up first in Recent Reviews
+  COMPLETED_REVIEWS.unshift({
+    claimId: s.id,
+    reviewer: s.reviewer,
+    completedAt: s.completedAt,
+    reviewerAnswers,
+    qualityScore: r.qualityScore,
+    agentScore: r.agentScore,
+    calibration: r.calibration,
+  })
+}

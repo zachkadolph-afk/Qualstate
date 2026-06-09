@@ -3,7 +3,7 @@
  * Bundled + run with esbuild+node (see npm run test:review) so it exercises
  * the REAL scoring + data, not a re-implementation.
  */
-import { REVIEW_CLAIMS } from '../src/data/claims'
+import { REVIEW_CLAIMS, COMPLETED_REVIEWS, HISTORY_CLAIMS } from '../src/data/claims'
 import { QUESTIONNAIRES, ANSWER_POINTS } from '../src/data/questions'
 import { computeReview, scoreAnswers, effectiveValue } from '../src/lib/scoring'
 import { AnswerValue, ReviewerAnswer } from '../src/data/types'
@@ -82,6 +82,30 @@ console.log('\n=== N/A answers are excluded from the denominator ===')
   withNa[naId] = 'na'
   check('all-yes (with an N/A excluded) scores 100', scoreAnswers(claim, withNa) === 100, `${scoreAnswers(claim, withNa)}`)
   check('ANSWER_POINTS sanity (yes=1, partial=0.5, no=0)', ANSWER_POINTS.yes === 1 && ANSWER_POINTS.partial === 0.5 && ANSWER_POINTS.no === 0)
+}
+
+console.log('\n=== Named recent completed reviews feed the dashboard ===')
+{
+  const named = ['H-AU-2207', 'H-PR-2208', 'H-CA-2209', 'H-PR-2210', 'H-CA-2211']
+  for (const id of named) {
+    const rev = COMPLETED_REVIEWS.find((r) => r.claimId === id)
+    const claim = HISTORY_CLAIMS[id]
+    check(`${id} is in completed history with a resolvable claim`, !!rev && !!claim)
+    if (rev && claim) {
+      const rec: Record<string, ReviewerAnswer> = {}
+      for (const a of rev.reviewerAnswers) rec[a.questionId] = a
+      const r = computeReview(claim, rec)
+      check(`${claim.claimNumber} stored scores match recomputed scores`,
+        r.qualityScore === rev.qualityScore && r.agentScore === rev.agentScore && r.calibration === rev.calibration,
+        `q${rev.qualityScore}/cal${rev.calibration}%`)
+    }
+  }
+  const topFive = COMPLETED_REVIEWS.slice(0, 5).map((r) => r.claimId)
+  check('named reviews occupy the most-recent slots', named.every((id) => topFive.includes(id)), topFive.join(','))
+  check('top review is the newest (2026-06-08)', COMPLETED_REVIEWS[0].completedAt === '2026-06-08', COMPLETED_REVIEWS[0].completedAt)
+  const pendingIds = new Set(REVIEW_CLAIMS.map((c) => c.id))
+  const overlap = COMPLETED_REVIEWS.filter((r) => pendingIds.has(r.claimId))
+  check('no claim is both pending and completed', overlap.length === 0, `${overlap.length} overlaps`)
 }
 
 console.log(`\n${failures === 0 ? '[32mAll checks passed[0m' : `[31m${failures} check(s) failed[0m`}\n`)
