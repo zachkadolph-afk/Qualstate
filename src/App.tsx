@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Queue from './pages/Queue'
 import Review from './pages/Review'
 import HowItWorks from './pages/HowItWorks'
+import Security from './pages/Security'
 import Results from './pages/Results'
 import Coaching from './pages/Coaching'
 import Audit from './pages/Audit'
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/users" element={admin ? <UserManagement /> : <Navigate to={home} replace />} />
           <Route path="/sampling" element={admin ? <Sampling /> : <Navigate to={home} replace />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/security" element={<Security />} />
           <Route path="*" element={<Navigate to={home} replace />} />
         </Routes>
       </main>

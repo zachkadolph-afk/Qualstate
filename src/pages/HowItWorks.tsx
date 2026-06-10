@@ -237,6 +237,24 @@ export default function HowItWorks() {
           ))}
         </div>
 
+        {/* ---------------- security architecture link ---------------- */}
+        <Link to="/security" className="block mt-5">
+          <Card className="p-5 hover:shadow-glow transition-shadow cursor-pointer group">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-600 grid place-items-center shrink-0">
+                <ShieldCheck size={21} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-brand-950">Security &amp; Data Architecture</div>
+                <p className="text-sm text-slate-500 mt-0.5">How carrier claim data (PII/PHI) is protected — certifications, encryption, private AI inference, audit, and deploy-in-your-cloud.</p>
+              </div>
+              <span className="flex items-center gap-1 text-sm font-semibold text-brand-600 group-hover:gap-2 transition-all shrink-0">
+                View <ArrowRight size={16} />
+              </span>
+            </div>
+          </Card>
+        </Link>
+
         {/* ---------------- closing vision ---------------- */}
         <Card className="mt-5 p-6 bg-gradient-to-br from-brand-950 to-brand-800 text-white border-0">
           <div className="flex items-center gap-2 text-accent-400 text-xs font-semibold uppercase tracking-wide">
